@@ -1,8 +1,10 @@
 {
   "name": "roome2.0",
-  "main": "index.js",
+  "main": "expo-router/entry",
   "expo": {
-    "plugins": ["expo-router"]
+    "plugins": [
+      "expo-router"
+    ]
   },
   "version": "1.0.0",
   "scripts": {
@@ -53,6 +55,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "babel-plugin-module-resolver": "^5.0.2",
     "dotenv": "^16.4.5",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
