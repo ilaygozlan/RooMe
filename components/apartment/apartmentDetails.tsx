@@ -15,8 +15,8 @@ import { useNavigation } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import ApartmentReview from "./components/apartmentReview";
-import ApartmentGallery from "./components/ApartmentGallery";
+//import ApartmentReview from "@/components/apartment/apartmentReview";
+import ApartmentGallery from "@/components/apartment/apartmentGallery";
 import API from "../config";
 
 // ------------------ Types ------------------
@@ -503,6 +503,7 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
     <SafeAreaView style={{ flex: 1 }}>
       <FlatList
         data={[]}
+        renderItem={() => null} 
         ListHeaderComponent={
           <View
             style={styles.container}
@@ -516,13 +517,13 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
             </View>
 
             <TouchableOpacity
-              onPress={() => {
+            /*   onPress={() => {
                 router.push({
                   pathname: "UserProfile",
                   params: { userId: apt.Creator_ID as any },
                 });
                 onClose();
-              }}
+              }} */
             >
               <View style={styles.creatorContainer}>
                 <Image
@@ -603,7 +604,7 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
 
             {renderExtraDetails()}
 
-            <ApartmentReview apartmentId={apt.ApartmentID} />
+           {/*  <ApartmentReview apartmentId={apt.ApartmentID} /> */}
           </View>
         }
       />

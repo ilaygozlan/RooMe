@@ -2,9 +2,10 @@ import Constants from "expo-constants";
 import { z } from "zod";
 
 // Schema for runtime validation of environment variables
+// Made more lenient to handle missing values gracefully during development
 const envSchema = z.object({
-  apiBaseUrl: z.string().url().min(1, "API_BASE_URL is required"),
-  googleMapsKey: z.string().min(1, "GOOGLE_MAPS_KEY is required"),
+  apiBaseUrl: z.string().default(""),
+  googleMapsKey: z.string().default(""),
   sentryDsn: z.string().optional().default(""),
 });
 
@@ -17,9 +18,31 @@ const extra =
   (Constants.manifest?.extra as Record<string, unknown> | undefined) ??
   {};
 
-// Validate and export typed environment variables
-// This will throw a descriptive error if validation fails
-export const ENV = envSchema.parse(extra);
+// Validate with safe defaults - won't throw if values are missing
+// This allows the app to start even if env vars aren't fully configured
+const parsed = envSchema.safeParse(extra);
+
+if (!parsed.success) {
+  console.warn("Environment variable validation failed:", parsed.error.format());
+}
+
+// Use parsed values or fallback to empty strings
+const envValues = parsed.success ? parsed.data : {
+  apiBaseUrl: "",
+  googleMapsKey: "",
+  sentryDsn: "",
+};
+
+// Validate URL format only if apiBaseUrl is provided
+if (envValues.apiBaseUrl && !z.string().url().safeParse(envValues.apiBaseUrl).success) {
+  console.warn("API_BASE_URL is not a valid URL:", envValues.apiBaseUrl);
+}
+
+export const ENV = {
+  apiBaseUrl: envValues.apiBaseUrl,
+  googleMapsKey: envValues.googleMapsKey,
+  sentryDsn: envValues.sentryDsn,
+};
 
 // Export individual values for convenience
 export const API_BASE_URL = ENV.apiBaseUrl;

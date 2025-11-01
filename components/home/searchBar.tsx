@@ -7,43 +7,65 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  Alert,
 } from "react-native";
-/*import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";*/
-
+import { useRouter } from "expo-router";
+import {
+  GooglePlacesAutocomplete,
+  GooglePlaceData,
+  GooglePlaceDetail,
+  GooglePlacesAutocompleteRef,
+} from "react-native-google-places-autocomplete";
 import MultiSlider from "@ptomasroos/react-native-multi-slider";
 import { AntDesign, Ionicons, FontAwesome5 } from "@expo/vector-icons";
-import SearchFilters from "./SearchFilters";
+import { ENV } from "../../src/config/env";
 
+// ---------- Types ----------
+type PriceRange = [number, number];
 
-/**
- * @component SearchBar
- * @description Advanced search component for apartment filtering with expandable interface.
- * Provides functionality for filtering apartments by type, location, and price range.
- *
- * Features:
- * - Expandable search interface
- * - Category selection (Rental, Roommates, Sublet)
- * - Price range slider
- * - Location selection
- * - Map view navigation
- * - Search filters integration
- *
- * @param {Object} props
- * @param {number|null} props.selectedType - Currently selected apartment type
- * @param {Function} props.setSelectedType - Function to update selected type
- * @param {string} props.selectedLocation - Currently selected location
- * @param {Function} props.setSelectedLocation - Function to update selected location
- * @param {Array<number>} props.priceRange - Current price range [min, max]
- * @param {Function} props.setPriceRange - Function to update price range
- * @param {Function} props.SearchApartments - Function to trigger apartment search
- */
+interface SelectedLocation {
+  address: string;
+  latitude: number;
+  longitude: number;
+  types?: string[];
+}
 
+interface FiltersJson {
+  entryDate?: string;
+  exitDate?: string;
+  gender?: string;          // one of genderOptions (Hebrew)
+  filters?: string[];       // roommateFilters
+  icons?: string[];         // ids/labels selected
+}
+
+interface SearchBarProps {
+  selectedType: number | null;
+  setSelectedType: (type: number | null) => void;
+
+  selectedLocation: SelectedLocation | null;
+  setSelectedLocation: (loc: SelectedLocation | null) => void;
+
+  priceRange: PriceRange;
+  setPriceRange: (range: PriceRange) => void;
+
+  SearchApartments: (filters?: Partial<FiltersJson>) => void;
+
+  filtersJson?: FiltersJson;
+  setFiltersJson?: (f: FiltersJson) => void;
+
+  index: boolean;                 // true = "has results" mode (refresh icon shows)
+  setIndex: (val: boolean) => void;
+
+  showAllApartments: () => void;
+}
+
+// ---------- Constants ----------
 const colors = {
   primary: "#E3965A",
   background: "#FDEAD7",
-};
+} as const;
 
-const genderOptions = ["אין העדפה", "רק גברים", "רק נשים"];
+const genderOptions = ["אין העדפה", "רק גברים", "רק נשים"] as const;
 
 const roommateFilters = [
   "מאפשרים חיות מחמד",
@@ -53,17 +75,16 @@ const roommateFilters = [
   "חצר / מרפסת",
   "מותר לעשן",
   "מרוהטת",
+] as const;
+
+const categories = [
+  { id: 0, name: "השכרה", icon: "home" as const },
+  { id: 1, name: "שותפים", icon: "team" as const },
+  { id: 2, name: "סאבלט", icon: "swap" as const },
 ];
-const iconOptions = [
-  { id: "wifi", name: "wifi", label: "אינטרנט" },
-  { id: "happy", name: "happy-outline", label: "חברתי" },
-  { id: "anchor", name: "navigate-outline", label: "יציבות" },
-  { id: "headphones", name: "headset-outline", label: "שקט" },
-  { id: "bus", name: "bus-outline", label: "תחבורה" },
-  { id: "tv", name: "tv-outline", label: "טלוויזיה" },
-  { id: "key", name: "key-outline", label: "גישה" },
-];
-export default function SearchBar({
+
+// ---------- Component ----------
+const SearchBar: React.FC<SearchBarProps> = ({
   selectedType,
   setSelectedType,
   selectedLocation,
@@ -76,31 +97,26 @@ export default function SearchBar({
   index,
   setIndex,
   showAllApartments,
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const [searchInput, setSearchInput] = useState(
-    selectedLocation?.address || ""
+}) => {
+  const [expanded, setExpanded] = useState<boolean>(false);
+  const [searchInput, setSearchInput] = useState<string>(
+    selectedLocation?.address ?? ""
   );
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [showAdvancedFiltersComp, setShowAdvancedFiltersComp] = useState(false);
-  const router = useRouter();
-  const googlePlacesRef = useRef();
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
+  const [showAdvancedFiltersComp, setShowAdvancedFiltersComp] =
+    useState<boolean>(false);
 
+  const router = useRouter();
+  const googlePlacesRef = useRef<GooglePlacesAutocompleteRef | null>(null);
+
+  // Enable LayoutAnimation on Android
   if (Platform.OS === "android") {
-    UIManager.setLayoutAnimationEnabledExperimental &&
-      UIManager.setLayoutAnimationEnabledExperimental(true);
+    UIManager.setLayoutAnimationEnabledExperimental?.(true);
   }
 
   useEffect(() => {
-    setSearchInput(selectedLocation?.address || "");
+    setSearchInput(selectedLocation?.address ?? "");
   }, [expanded, selectedLocation]);
-
-  const locations = ["גמישות בחיפוש", "תל אביב", "חיפה", "באר שבע"];
-  const categories = [
-    { id: 0, name: "השכרה", icon: "home" },
-    { id: 1, name: "שותפים", icon: "team" },
-    { id: 2, name: "סאבלט", icon: "swap" },
-  ];
 
   const toggleExpand = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -114,12 +130,7 @@ export default function SearchBar({
         {/* Search bar */}
         <TouchableOpacity style={styles.searchBar} onPress={toggleExpand}>
           {index ? (
-            <Ionicons
-              name="search"
-              size={20}
-              color="#000"
-              style={styles.icon}
-            />
+            <Ionicons name="search" size={20} color="#000" style={styles.icon} />
           ) : (
             <TouchableOpacity
               onPress={() => {
@@ -141,14 +152,13 @@ export default function SearchBar({
               />
             </TouchableOpacity>
           )}
+
           <View style={{ flex: 1, alignItems: "flex-end" }}>
             <Text style={[styles.locationMain, { textAlign: "right" }]}>
               {selectedLocation || selectedType !== null
-                ? `${selectedLocation?.address || ""}${
+                ? `${selectedLocation?.address ?? ""}${
                     selectedLocation && selectedType !== null ? " • " : ""
-                  }${
-                    selectedType !== null ? categories[selectedType].name : ""
-                  }`
+                  }${selectedType !== null ? categories[selectedType].name : ""}`
                 : "מה תרצה לחפש?"}
             </Text>
             <Text style={[styles.locationSub, { textAlign: "right" }]}>
@@ -156,6 +166,7 @@ export default function SearchBar({
             </Text>
           </View>
         </TouchableOpacity>
+
         {showAdvancedFilters && !index && (
           <TouchableOpacity
             style={styles.filterIconContainer}
@@ -164,6 +175,7 @@ export default function SearchBar({
             <FontAwesome5 name="sliders-h" size={20} color="#fff" />
           </TouchableOpacity>
         )}
+
         {/* Map icon */}
         <TouchableOpacity
           style={styles.mapIconContainer}
@@ -173,25 +185,19 @@ export default function SearchBar({
         </TouchableOpacity>
       </View>
 
+      {/* Advanced filters component placeholder (commented) */}
+      {/*
       {showAdvancedFiltersComp && (
         <View style={{ marginTop: 10, width: "100%", height: "85%" }}>
           <SearchFilters
             SearchApartments={(filters) => {
-              setFiltersJson(filters);
+              setFiltersJson?.(filters);
               SearchApartments(filters);
               setShowAdvancedFiltersComp(false);
             }}
-            initialEntryDate={
-              filtersJson?.entryDate ? new Date(filtersJson.entryDate) : null
-            }
-            initialExitDate={
-              filtersJson?.exitDate ? new Date(filtersJson.exitDate) : null
-            }
-            initialGenderIndex={
-              filtersJson?.gender
-                ? genderOptions.indexOf(filtersJson.gender)
-                : null
-            }
+            initialEntryDate={filtersJson?.entryDate ? new Date(filtersJson.entryDate) : null}
+            initialExitDate={filtersJson?.exitDate ? new Date(filtersJson.exitDate) : null}
+            initialGenderIndex={filtersJson?.gender ? genderOptions.indexOf(filtersJson.gender as any) : null}
             initialRoommateOptions={roommateFilters.map(
               (f) => filtersJson?.filters?.includes(f) || false
             )}
@@ -199,13 +205,16 @@ export default function SearchBar({
           />
         </View>
       )}
+      */}
 
       {expanded && (
         <View style={styles.expandSection}>
           {/* Google Autocomplete */}
           <View style={{ zIndex: 2, width: "100%", margin: 0 }}>
             <Text style={[styles.label, { marginTop: 0 }]}>בחר מיקום:</Text>
+
             <GooglePlacesAutocomplete
+              ref={googlePlacesRef}
               onFail={(error) => {
                 console.error("Autocomplete ERROR:", error);
                 Alert.alert("שגיאה", "אירעה שגיאה בעת חיפוש הכתובת");
@@ -217,33 +226,33 @@ export default function SearchBar({
               }}
               placeholder={selectedLocation?.address || "הקלד מיקום..."}
               fetchDetails={true}
-              onPress={(data, details = null) => {
-               
-                if (!details || !details.geometry?.location) {
+              onPress={(data: GooglePlaceData, details: GooglePlaceDetail | null) => {
+                if (!details?.geometry?.location) {
                   console.warn("No location details available");
                   Alert.alert("שגיאה", "פרטי מיקום לא זמינים כרגע");
                   return;
                 }
 
-                const location = details.formatted_address || "";
+                const location = details.formatted_address ?? "";
                 const lat = details.geometry.location.lat;
                 const lng = details.geometry.location.lng;
 
-                const fullAddress = {
+                const fullAddress: SelectedLocation = {
                   address: location,
                   latitude: lat,
                   longitude: lng,
-                  types: details.types || [],
+                  types: details.types ?? [],
                 };
-                console.log(fullAddress)
+
                 setSelectedLocation(fullAddress);
               }}
               isRowScrollable={false}
               query={{
-                key: "AIzaSyCGucSUapSIUa_ykXy0K8tl6XR-ITXRj3o",
+                key: ENV.googleMapsKey,
                 language: "he",
                 components: "country:il",
               }}
+              predefinedPlaces={[]}  
               enablePoweredByContainer={false}
               styles={{
                 textInput: {
@@ -269,7 +278,7 @@ export default function SearchBar({
             />
           </View>
 
-          {/* apartment categories */}
+          {/* Categories */}
           <Text style={[styles.label, { marginTop: 65 }]}>בחר קטגוריה:</Text>
           <View style={styles.categories}>
             {categories.map((cat) => (
@@ -294,17 +303,17 @@ export default function SearchBar({
             ))}
           </View>
 
-          {/* select apartment price range */}
-          <Text style={[styles.label, { marginTop: 25 }]}>
-            בחר טווח מחירים:
-          </Text>
+          {/* Price range */}
+          <Text style={[styles.label, { marginTop: 25 }]}>בחר טווח מחירים:</Text>
 
           <MultiSlider
             values={priceRange}
             min={0}
             max={20000}
             step={100}
-            onValuesChange={(values) => setPriceRange(values)}
+            onValuesChange={(values: number[]) =>
+              setPriceRange([values[0] ?? 0, values[1] ?? 0])
+            }
             selectedStyle={{ backgroundColor: colors.primary }}
             markerStyle={{ backgroundColor: colors.primary }}
             containerStyle={{ marginHorizontal: 10 }}
@@ -315,17 +324,14 @@ export default function SearchBar({
             <Text style={styles.priceText}>מקסימום: {priceRange[1]} ₪</Text>
           </View>
 
-          {/* search btn */}
+          {/* Search button */}
           <View style={styles.searchButtonContainer}>
             <TouchableOpacity
               style={styles.searchButton}
               onPress={() => {
                 console.log("מיקום שנבחר:", selectedLocation);
                 console.log("סוג דירה שנבחר:", selectedType);
-                console.log(
-                  "טווח מחירים:",
-                  `${priceRange[0]} - ${priceRange[1]} `
-                );
+                console.log("טווח מחירים:", `${priceRange[0]} - ${priceRange[1]} `);
                 SearchApartments();
                 setExpanded(false);
                 setShowAdvancedFilters(true);
@@ -338,8 +344,9 @@ export default function SearchBar({
       )}
     </View>
   );
-}
+};
 
+// ---------- Styles ----------
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "#f2f2f2",
@@ -392,24 +399,6 @@ const styles = StyleSheet.create({
     textAlign: "right",
     marginTop: 20,
   },
-  commonLocations: {
-    alignItems: "center",
-    paddingVertical: 5,
-    paddingHorizontal: 0,
-  },
-  locationOption: {
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    margin: 5,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    backgroundColor: "#f9f9f9",
-  },
-  locationOptionText: {
-    fontSize: 14,
-    color: "#333",
-  },
   categories: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -436,15 +425,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
     alignItems: "center",
   },
-
   searchButton: {
-    backgroundColor: "#E3965A",
+    backgroundColor: colors.primary,
     paddingVertical: 12,
     paddingHorizontal: 60,
     borderRadius: 25,
     elevation: 3,
   },
-
   searchButtonText: {
     color: "white",
     fontSize: 16,
@@ -456,13 +443,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     marginTop: 10,
   },
-
   priceText: {
     fontSize: 14,
     color: "#555",
   },
   mapIconContainer: {
-    backgroundColor: colors.primary,
+    backgroundColor: "rgba(227, 150, 90, 0.9)",
     padding: 10,
     borderRadius: 30,
     elevation: 4,
@@ -478,3 +464,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 });
+
+export default SearchBar;

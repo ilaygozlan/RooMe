@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/lib/ui/ThemeProvider";
 import { Stack } from "expo-router";
 import { StatusBar } from "react-native";
 import "react-native-gesture-handler";
+import "react-native-get-random-values";
 import "react-native-reanimated";
 
 export default function RootLayout() {

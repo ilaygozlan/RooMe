@@ -27,7 +27,7 @@ export const light: Palette = {
   success: "#10B981",
   warning: "#E3965A",
   danger: "#EF4444",
-  navbarBG: "#bfd3fbff",
+  navbarBG: "#fbddbfff",
 };
 
 

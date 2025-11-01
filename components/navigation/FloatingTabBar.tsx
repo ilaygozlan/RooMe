@@ -63,7 +63,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }: Botto
             borderWidth: Platform.OS === "ios" ? 0 : 1,
             borderColor: palette.border,
             backgroundColor: Platform.OS === "ios" ? "transparent" : palette.card,
-            shadowColor: "#000",
+            shadowColor: "#fdc899ff",
             shadowOpacity: 0.25,
             shadowRadius: 16,
             elevation: 12,
