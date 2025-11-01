@@ -9,10 +9,12 @@ import {
   Share,
   Dimensions,
   Platform,
+  Animated,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 //import LikeButton from "@/components/apartment/likeButton";
 import OpenHouseButton from "@/components/apartment/openHouseButton";
 import SearchBar from "@/components/home/searchBar";
@@ -82,7 +84,10 @@ export const hexToRgba = (hex: string, alpha: number = 0.5): string => {
 };
 
 export default function ApartmentComponent(props: ApartmentProps) {
+  const { top } = useSafeAreaInsets();
   const [width, setWidth] = useState(0);
+  const lastScrollY = useRef(0);
+  const searchBarTranslateY = useRef(new Animated.Value(0)).current;
   const allApartments: ExtendedApartment[] = [
     {
       ApartmentID: 101,
@@ -612,60 +617,118 @@ export default function ApartmentComponent(props: ApartmentProps) {
     return R * c;
   }
 
+  const handleScroll = (event: any) => {
+    const currentScrollY = event.nativeEvent.contentOffset.y;
+    const scrollDifference = currentScrollY - lastScrollY.current;
+    
+    // Threshold to prevent jittery behavior
+    if (Math.abs(scrollDifference) < 5) return;
+    
+    if (scrollDifference > 0 && currentScrollY > 10) {
+      // Scrolling down - hide search bar
+      Animated.timing(searchBarTranslateY, {
+        toValue: -300,
+        duration: 150,
+        useNativeDriver: true,
+      }).start();
+    } else if (scrollDifference < -10) {
+      // Scrolling up - show search bar
+      Animated.timing(searchBarTranslateY, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+    
+    lastScrollY.current = currentScrollY;
+  };
+
   return (
     <>
-    <View style={{top: 50}}>
-      <SearchBar
-        selectedType={selectedType}
-        setSelectedType={setSelectedType}
-        selectedLocation={selectedLocation}
-        setSelectedLocation={setSelectedLocation}
-        priceRange={priceRange}
-        setPriceRange={setPriceRange}
-        SearchApartments={SearchApartments}
-        filtersJson={filtersJson}
-        setFiltersJson={setFiltersJson}
-        index={index}
-        setIndex={setIndex}
-        showAllApartments={() => {
-          setPreviewSearchApt(allApartments);
-        }}
-      />
-      <ScrollView>
-        <View style={styles.container}>{renderApartments()}</View>
-      </ScrollView>
-
-      <Modal
-        visible={showApartmentDetails}
-        animationType="slide"
-        onRequestClose={() => {
-          setShowApartmentDetails(false);
-          setSelectedApartment(null);
-        }}
-      >
-        {selectedApartment && (
-          <ApartmentDetails
-            key={selectedApartment.ApartmentID}
-            apt={selectedApartment}
-            onClose={() => {
-              setShowApartmentDetails(false);
-              setSelectedApartment(null);
+      <View style={styles.screenContainer}>
+        <Animated.View
+          pointerEvents="box-none"
+          style={[
+            styles.searchBarContainer,
+            { top: top + 10 },
+            {
+              transform: [{ translateY: searchBarTranslateY }],
+            },
+          ]}
+        >
+          <SearchBar
+            selectedType={selectedType}
+            setSelectedType={setSelectedType}
+            selectedLocation={selectedLocation}
+            setSelectedLocation={setSelectedLocation}
+            priceRange={priceRange}
+            setPriceRange={setPriceRange}
+            SearchApartments={SearchApartments}
+            filtersJson={filtersJson}
+            setFiltersJson={setFiltersJson}
+            index={index}
+            setIndex={setIndex}
+            showAllApartments={() => {
+              setPreviewSearchApt(allApartments);
             }}
           />
-        )}
-      </Modal>
+        </Animated.View>
+        <Animated.ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={{ paddingTop: 145 }}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+        >
+          <View style={styles.container}>{renderApartments()}</View>
+        </Animated.ScrollView>
+
+        <Modal
+          visible={showApartmentDetails}
+          animationType="slide"
+          onRequestClose={() => {
+            setShowApartmentDetails(false);
+            setSelectedApartment(null);
+          }}
+        >
+          {selectedApartment && (
+            <ApartmentDetails
+              key={selectedApartment.ApartmentID}
+              apt={selectedApartment}
+              onClose={() => {
+                setShowApartmentDetails(false);
+                setSelectedApartment(null);
+              }}
+            />
+          )}
+        </Modal>
       </View>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: "transparent",
+  },
+  searchBarContainer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    backgroundColor: "transparent",
+    zIndex: 10,
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: "transparent",
+  },
   container: {
     flex: 1,
     justifyContent: "center",
     backgroundColor: "#F0F0F0",
+    paddingTop: 10,
   },
- card: {
+  card: {
     alignSelf: "center",
     width: windowWidth - 40,
     backgroundColor: "white",

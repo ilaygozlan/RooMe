@@ -10,12 +10,7 @@ import {
   Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
-import {
-  GooglePlacesAutocomplete,
-  GooglePlaceData,
-  GooglePlaceDetail,
-  GooglePlacesAutocompleteRef,
-} from "react-native-google-places-autocomplete";
+import { GooglePlacesAutocomplete } from "@/components/home/googlePlacesCustomAPI";
 import MultiSlider from "@ptomasroos/react-native-multi-slider";
 import { AntDesign, Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { ENV } from "../../src/config/env";
@@ -214,7 +209,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
             <Text style={[styles.label, { marginTop: 0 }]}>בחר מיקום:</Text>
 
             <GooglePlacesAutocomplete
-              ref={googlePlacesRef}
               onFail={(error) => {
                 console.error("Autocomplete ERROR:", error);
                 Alert.alert("שגיאה", "אירעה שגיאה בעת חיפוש הכתובת");
@@ -226,33 +220,33 @@ const SearchBar: React.FC<SearchBarProps> = ({
               }}
               placeholder={selectedLocation?.address || "הקלד מיקום..."}
               fetchDetails={true}
-              onPress={(data: GooglePlaceData, details: GooglePlaceDetail | null) => {
-                if (!details?.geometry?.location) {
+              onPress={(data, details = null) => {
+               
+                if (!details || !details.geometry?.location) {
                   console.warn("No location details available");
                   Alert.alert("שגיאה", "פרטי מיקום לא זמינים כרגע");
                   return;
                 }
 
-                const location = details.formatted_address ?? "";
+                const location = details.formatted_address || "";
                 const lat = details.geometry.location.lat;
                 const lng = details.geometry.location.lng;
 
-                const fullAddress: SelectedLocation = {
+                const fullAddress = {
                   address: location,
                   latitude: lat,
                   longitude: lng,
-                  types: details.types ?? [],
+                  types: details.types || [],
                 };
-
+                console.log(fullAddress)
                 setSelectedLocation(fullAddress);
               }}
               isRowScrollable={false}
               query={{
-                key: ENV.googleMapsKey,
+                key: "AIzaSyCGucSUapSIUa_ykXy0K8tl6XR-ITXRj3o",
                 language: "he",
                 components: "country:il",
               }}
-              predefinedPlaces={[]}  
               enablePoweredByContainer={false}
               styles={{
                 textInput: {
@@ -349,14 +343,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
 // ---------- Styles ----------
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "transparent",
     padding: 15,
-    elevation: 2,
     alignItems: "center",
     gap: 10,
   },
   searchRow: {
     flexDirection: "row-reverse",
+    backgroundColor: "transparent",
     alignItems: "center",
     gap: 10,
     zIndex: 2,
@@ -370,6 +364,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 15,
     zIndex: 2,
+    // Shadow for floating effect
+    shadowColor: "#E3965A",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.4,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   icon: {
     marginRight: 10,
@@ -384,13 +387,22 @@ const styles = StyleSheet.create({
     color: "gray",
   },
   expandSection: {
-    marginTop: 0,
+    marginTop: 10,
     maxHeight: 500,
     padding: 10,
     backgroundColor: "#fefefe",
     zIndex: 1,
     borderRadius: 15,
     width: "100%",
+    // Shadow for floating effect
+    shadowColor: "#E3965A",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.4,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   label: {
     fontSize: 16,
@@ -451,17 +463,33 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(227, 150, 90, 0.9)",
     padding: 10,
     borderRadius: 30,
-    elevation: 4,
     alignItems: "center",
     justifyContent: "center",
+    // Shadow for floating effect
+    shadowColor: "#E3965A",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.4,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   filterIconContainer: {
     backgroundColor: colors.primary,
     padding: 10,
     borderRadius: 30,
-    elevation: 4,
     alignItems: "center",
     justifyContent: "center",
+    // Shadow for floating effect
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 });
 
