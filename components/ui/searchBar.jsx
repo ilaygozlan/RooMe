@@ -7,17 +7,13 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
-  ScrollView,
-  FlatList,
 } from "react-native";
 /*import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";*/
 
 import MultiSlider from "@ptomasroos/react-native-multi-slider";
 import { AntDesign, Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import SearchFilters from "./SearchFilters";
-import { useRouter } from "expo-router";
-import { Keyboard, TouchableWithoutFeedback } from "react-native";
-import { GooglePlacesAutocomplete } from "./GooglePlacesAPI";
+
 
 /**
  * @component SearchBar

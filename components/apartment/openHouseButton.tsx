@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 //import * as Calendar from "expo-calendar";
-//import API from "../../config";
+import API from "../config";
 //import { sendPushNotification } from "./pushNatification";
 
 // -------- Types --------

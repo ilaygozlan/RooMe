@@ -1,17 +1,19 @@
-import React, { useState, useRef } from "react";
+import React, { useRef, useState } from "react";
 import {
-  View,
-  ScrollView,
-  Image,
-  StyleSheet,
   Dimensions,
-  Text,
-  NativeSyntheticEvent,
+  Image,
   NativeScrollEvent,
+  NativeSyntheticEvent,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
+import { ENV } from "../../src/config/env";
+
 const screenWidth = Dimensions.get("window").width;
-const baseUrl = "https://roomebackend20250414140006.azurewebsites.net";
+const baseUrl = ENV.apiBaseUrl;
 
 // ----- Types -----
 type Props = {

@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect, useCallback } from "react";
 import { TouchableOpacity, Alert, StyleSheet, View, Text } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
-//import API from "../../config";
+import API from "../config";
 //import { userInfoContext } from "../contex/userInfoContext";
 //import { ActiveApartmentContext } from "../contex/ActiveApartmentContext";
 
