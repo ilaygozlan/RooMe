@@ -288,7 +288,6 @@ export default function ApartmentComponent(props: ApartmentProps) {
         return "#ddd";
     }
   };
-  
 
   const getTypeName = (type: number): string => {
     switch (type) {
@@ -620,10 +619,10 @@ export default function ApartmentComponent(props: ApartmentProps) {
   const handleScroll = (event: any) => {
     const currentScrollY = event.nativeEvent.contentOffset.y;
     const scrollDifference = currentScrollY - lastScrollY.current;
-    
+
     // Threshold to prevent jittery behavior
     if (Math.abs(scrollDifference) < 5) return;
-    
+
     if (scrollDifference > 0 && currentScrollY > 0) {
       // Scrolling down - hide search bar
       Animated.timing(searchBarTranslateY, {
@@ -639,7 +638,7 @@ export default function ApartmentComponent(props: ApartmentProps) {
         useNativeDriver: true,
       }).start();
     }
-    
+
     lastScrollY.current = currentScrollY;
   };
 
