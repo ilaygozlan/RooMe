@@ -57,7 +57,7 @@ type ExtendedApartment = Apartment & {
 };
 
 const windowWidth = Dimensions.get("window").width;
-const windowHeight = Dimensions.get("window").height;
+/* const windowHeight = Dimensions.get("window").height; */
 
 export const hexToRgba = (hex: string, alpha: number = 0.5): string => {
   let cleanHex = hex.replace("#", "");
@@ -624,11 +624,11 @@ export default function ApartmentComponent(props: ApartmentProps) {
     // Threshold to prevent jittery behavior
     if (Math.abs(scrollDifference) < 5) return;
     
-    if (scrollDifference > 0 && currentScrollY > 10) {
+    if (scrollDifference > 0 && currentScrollY > 0) {
       // Scrolling down - hide search bar
       Animated.timing(searchBarTranslateY, {
-        toValue: -300,
-        duration: 150,
+        toValue: -150,
+        duration: 100,
         useNativeDriver: true,
       }).start();
     } else if (scrollDifference < -10) {

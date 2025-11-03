@@ -9,7 +9,7 @@ import {
   UIManager,
   Alert,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, Link } from "expo-router";
 import { GooglePlacesAutocomplete } from "@/components/home/googlePlacesCustomAPI";
 import MultiSlider from "@ptomasroos/react-native-multi-slider";
 import { AntDesign, Ionicons, FontAwesome5 } from "@expo/vector-icons";
@@ -28,9 +28,9 @@ interface SelectedLocation {
 interface FiltersJson {
   entryDate?: string;
   exitDate?: string;
-  gender?: string;          // one of genderOptions (Hebrew)
-  filters?: string[];       // roommateFilters
-  icons?: string[];         // ids/labels selected
+  gender?: string; // one of genderOptions (Hebrew)
+  filters?: string[]; // roommateFilters
+  icons?: string[]; // ids/labels selected
 }
 
 interface SearchBarProps {
@@ -48,7 +48,7 @@ interface SearchBarProps {
   filtersJson?: FiltersJson;
   setFiltersJson?: (f: FiltersJson) => void;
 
-  index: boolean;                 // true = "has results" mode (refresh icon shows)
+  index: boolean; // true = "has results" mode (refresh icon shows)
   setIndex: (val: boolean) => void;
 
   showAllApartments: () => void;
@@ -97,7 +97,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const [searchInput, setSearchInput] = useState<string>(
     selectedLocation?.address ?? ""
   );
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] =
+    useState<boolean>(false);
   const [showAdvancedFiltersComp, setShowAdvancedFiltersComp] =
     useState<boolean>(false);
 
@@ -125,7 +126,12 @@ const SearchBar: React.FC<SearchBarProps> = ({
         {/* Search bar */}
         <TouchableOpacity style={styles.searchBar} onPress={toggleExpand}>
           {index ? (
-            <Ionicons name="search" size={20} color="#000" style={styles.icon} />
+            <Ionicons
+              name="search"
+              size={20}
+              color="#000"
+              style={styles.icon}
+            />
           ) : (
             <TouchableOpacity
               onPress={() => {
@@ -153,7 +159,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
               {selectedLocation || selectedType !== null
                 ? `${selectedLocation?.address ?? ""}${
                     selectedLocation && selectedType !== null ? " • " : ""
-                  }${selectedType !== null ? categories[selectedType].name : ""}`
+                  }${
+                    selectedType !== null ? categories[selectedType].name : ""
+                  }`
                 : "מה תרצה לחפש?"}
             </Text>
             <Text style={[styles.locationSub, { textAlign: "right" }]}>
@@ -172,12 +180,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
         )}
 
         {/* Map icon */}
-        <TouchableOpacity
-          style={styles.mapIconContainer}
-          onPress={() => router.push({ pathname: "/map" })}
-        >
-          <FontAwesome5 name="map-marked-alt" size={20} color="#fff" />
-        </TouchableOpacity>
+        <Link href="./map" asChild>
+          <TouchableOpacity style={styles.mapIconContainer}>
+            <FontAwesome5 name="map-marked-alt" size={20} color="#fff" />
+          </TouchableOpacity>
+        </Link>
       </View>
 
       {/* Advanced filters component placeholder (commented) */}
@@ -221,7 +228,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
               placeholder={selectedLocation?.address || "הקלד מיקום..."}
               fetchDetails={true}
               onPress={(data, details = null) => {
-               
                 if (!details || !details.geometry?.location) {
                   console.warn("No location details available");
                   Alert.alert("שגיאה", "פרטי מיקום לא זמינים כרגע");
@@ -238,7 +244,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                   longitude: lng,
                   types: details.types || [],
                 };
-                console.log(fullAddress)
+                console.log(fullAddress);
                 setSelectedLocation(fullAddress);
               }}
               isRowScrollable={false}
@@ -298,7 +304,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
           </View>
 
           {/* Price range */}
-          <Text style={[styles.label, { marginTop: 25 }]}>בחר טווח מחירים:</Text>
+          <Text style={[styles.label, { marginTop: 25 }]}>
+            בחר טווח מחירים:
+          </Text>
 
           <MultiSlider
             values={priceRange}
@@ -325,7 +333,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
               onPress={() => {
                 console.log("מיקום שנבחר:", selectedLocation);
                 console.log("סוג דירה שנבחר:", selectedType);
-                console.log("טווח מחירים:", `${priceRange[0]} - ${priceRange[1]} `);
+                console.log(
+                  "טווח מחירים:",
+                  `${priceRange[0]} - ${priceRange[1]} `
+                );
                 SearchApartments();
                 setExpanded(false);
                 setShowAdvancedFilters(true);
@@ -461,7 +472,7 @@ const styles = StyleSheet.create({
   },
   mapIconContainer: {
     backgroundColor: "rgba(227, 150, 90, 0.9)",
-    padding: 10,
+    padding: 15,
     borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
