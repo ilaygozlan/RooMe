@@ -180,7 +180,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         )}
 
         {/* Map icon */}
-        <Link href="./map" asChild>
+        <Link href="/map" asChild>
           <TouchableOpacity style={styles.mapIconContainer}>
             <FontAwesome5 name="map-marked-alt" size={20} color="#fff" />
           </TouchableOpacity>
