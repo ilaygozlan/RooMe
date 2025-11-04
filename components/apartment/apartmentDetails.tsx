@@ -10,10 +10,11 @@ import {
   Animated,
   FlatList,
 } from "react-native";
-import { FontAwesome5, MaterialIcons, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import {  MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import ExtraDetails from "@/components/apartment/extraApartmentDetails";
 
 //import ApartmentReview from "@/components/apartment/apartmentReview";
 import ApartmentGallery from "@/components/apartment/apartmentGallery";
@@ -23,16 +24,6 @@ import { labelToIcon } from "@/utils/labelIcons";
 import { labelTranslations } from "@/utils/labelTranslations";
 
 // ------------------ Types ------------------
-
-// Roommate parsed structure (Hebrew keys as in original UI)
-type RoommateDetails = {
-  ["שם"]?: string;
-  ["מגדר"]?: string;
-  ["עיסוק"]?: string;
-  ["תאריך לידה"]?: string;
-  ["תמונה"]?: string;
-  ["תיאור"]?: string;
-};
 
 // Labels JSON item shape (as stored in DB)
 type LabelItem = { value?: string } | string;
@@ -147,49 +138,6 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
     }
   };
 
-  // Parse roommates encoded string to a structured list
-  const parseRoommates = (info?: string): RoommateDetails[] => {
-    if (!info) return [];
-    const roommateStrings = info
-      .split("||")
-      .map((r) => r.trim())
-      .filter(Boolean);
-
-    return roommateStrings.map((rm) => {
-      const parts = rm.split("|").map((p) => p.trim());
-      const details: RoommateDetails = {};
-      parts.forEach((part) => {
-        const [key, raw] = part.split(":");
-        const value = raw?.trim();
-        if (!key || !value) return;
-        if (value === "N/A" || value.toLowerCase() === "null") return;
-
-        switch (key.trim()) {
-          case "Name":
-            details["שם"] = value;
-            break;
-          case "Gender":
-            details["מגדר"] = value;
-            break;
-          case "Job":
-            details["עיסוק"] = value;
-            break;
-          case "BirthDate":
-            details["תאריך לידה"] = value;
-            break;
-          case "Image":
-            details["תמונה"] = value;
-            break;
-          case "Description":
-            details["תיאור"] = value;
-            break;
-          default:
-            break;
-        }
-      });
-      return details;
-    });
-  };
 
   // Safely parse LabelsJson
   const getApartmentLabels = (): string[] => {
@@ -237,129 +185,6 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
     );
   };
 
-  const renderExtraDetails = () => {
-    switch (apt.ApartmentType) {
-      case 0:
-        return (
-          <>
-            <View style={styles.detailRow}>
-              <MaterialIcons name="calendar-today" size={18} color="#E3965A" />
-              <Text style={styles.detail}>
-                משך חוזה: {apt.Rental_ContractLength} חודשים
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <FontAwesome5 name="sync" size={16} color="#E3965A" />
-              <Text style={styles.detail}>
-                הארכה אפשרית: {apt.Rental_ExtensionPossible ? "כן" : "לא"}
-              </Text>
-            </View>
-          </>
-        );
-      case 1: {
-        const roommates = parseRoommates(apt.Roommates);
-        return (
-          <>
-            <View style={styles.detailRow}>
-              <FontAwesome5 name="users" size={16} color="#E3965A" />
-              <Text style={styles.detail}>
-                מס' שותפים: {apt.Shared_NumberOfRoommates}
-              </Text>
-            </View>
-
-            {roommates.length > 0 && (
-              <View>
-                <ScrollView
-                  horizontal
-                  pagingEnabled
-                  showsHorizontalScrollIndicator={false}
-                  ref={carouselRef}
-                  inverted
-                  onScroll={Animated.event(
-                    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-                    { useNativeDriver: false }
-                  )}
-                  scrollEventThrottle={16}
-                >
-                  {roommates.map((rm, index) => (
-                    <View key={index} style={styles.roommateCard}>
-                      {rm["תמונה"] && (
-                        <Image
-                          source={{ uri: rm["תמונה"] }}
-                          style={styles.roommateImage}
-                          resizeMode="cover"
-                        />
-                      )}
-                      <Text style={styles.roommateHeader}>
-                        🧑‍🤝‍🧑 שותף {index + 1}
-                      </Text>
-                      {Object.entries(rm).map(
-                        ([label, value]) =>
-                          label !== "תמונה" && (
-                            <Text key={label} style={styles.roommateDetail}>
-                              • {label}: {value}
-                            </Text>
-                          )
-                      )}
-                    </View>
-                  ))}
-                </ScrollView>
-
-                <View style={styles.paginationContainer}>
-                  {roommates.map((_, i) => {
-                    const inputRange = [(i - 1) * width, i * width, (i + 1) * width];
-                    const dotWidth = scrollX.interpolate({
-                      inputRange,
-                      outputRange: [8, 16, 8],
-                      extrapolate: "clamp",
-                    });
-                    const dotColor = scrollX.interpolate({
-                      inputRange,
-                      outputRange: ["#ccc", "#E3965A", "#ccc"],
-                      extrapolate: "clamp",
-                    });
-
-                    return (
-                      <Animated.View
-                        key={i}
-                        style={[
-                          styles.dot,
-                          {
-                            width: dotWidth as unknown as number,
-                            // Animated color is fine at runtime; TS needs a cast for style type
-                            backgroundColor: dotColor as unknown as string,
-                          },
-                        ]}
-                      />
-                    );
-                  })}
-                </View>
-              </View>
-            )}
-          </>
-        );
-      }
-      case 2:
-        return (
-          <>
-            <View style={styles.detailRow}>
-              <MaterialIcons name="cancel" size={18} color="#E3965A" />
-              <Text style={styles.detail}>
-                ביטול ללא קנס: {apt.Sublet_CanCancelWithoutPenalty ? "כן" : "לא"}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <MaterialIcons name="home" size={18} color="#E3965A" />
-              <Text style={styles.detail}>
-                נכס שלם: {apt.Sublet_IsWholeProperty ? "כן" : "לא"}
-              </Text>
-            </View>
-          </>
-        );
-      default:
-        return null;
-    }
-  };
 
   const resolvedAddress = (() => {
     try {
@@ -417,7 +242,7 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
             <ApartmentGallery images={apt.Images || []} width={(containerWidth || width) - 40} />
 
             <Text style={styles.title}>{resolvedAddress}</Text>
-            <Text style={styles.price}>{apt.Price} ש&quats;ח</Text>
+            <Text style={styles.price}>{apt.Price} ש"ח</Text>
             <Text style={styles.description}>{apt.Description}</Text>
 
             {renderApartmentLabels()}
@@ -478,7 +303,7 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
               </View>
             )}
 
-            {renderExtraDetails()}
+            <ExtraDetails apt={apt}/>
 
            {/*  <ApartmentReview apartmentId={apt.ApartmentID} /> */}
           </View>
@@ -501,6 +326,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
     marginBottom: 0,
+    top: 30,
   },
   backButton: {
     padding: 5,
