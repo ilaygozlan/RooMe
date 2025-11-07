@@ -117,8 +117,8 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     width: screenWidth,
-    height: screenHeight,
-    backgroundColor: "transperent",
+    height: screenHeight ,
+    backgroundColor: "transparent",
     zIndex: 1000,
   },
 });
