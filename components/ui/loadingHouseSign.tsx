@@ -1,11 +1,14 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Animated, Easing } from "react-native";
+import { View, Text, StyleSheet, Animated, Easing, Dimensions } from "react-native";
 import Svg, { Path, Defs, Mask, Rect } from "react-native-svg";
 
 const AnimatedRect = Animated.createAnimatedComponent(Rect as unknown as React.ComponentType<any>);
 
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+
 type Props = {
   text?: string;
+  overlay?: boolean; // If true, renders as absolute positioned overlay centered on screen
 };
 
 /**
@@ -29,7 +32,7 @@ type Props = {
  * @example
  * <HouseLoading />
  */
-export default function HouseLoading({ text = "טוען..." }: Props) {
+export default function HouseLoading({ text = "טוען...", overlay = false }: Props) {
   const fillAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -60,8 +63,12 @@ export default function HouseLoading({ text = "טוען..." }: Props) {
     outputRange: [600, 0], // fills from bottom to top
   });
 
+  const containerStyle = overlay 
+    ? [styles.loadingContainer, styles.overlayContainer]
+    : styles.loadingContainer;
+
   return (
-    <View style={styles.loadingContainer}>
+    <View style={containerStyle} pointerEvents={overlay ? "none" : "auto"}>
       <Svg width={60} height={60} viewBox="0 0 512 512">
         <Defs>
           <Mask id="mask">
@@ -101,5 +108,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "white",
+    borderRadius: 100,
+  },
+  overlayContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: screenWidth,
+    height: screenHeight,
+    backgroundColor: "transperent",
+    zIndex: 1000,
   },
 });
