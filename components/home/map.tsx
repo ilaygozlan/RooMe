@@ -1,7 +1,7 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Dimensions,
@@ -15,6 +15,9 @@ import MapView, { Marker, Region } from "react-native-maps";
 //import { ActiveApartmentContext } from "./contex/ActiveApartmentContext";
 import HouseLoading from "@/components/ui/loadingHouseSign";
 //import ApartmentDetails from "./ApartmentDetails";
+import FloatingSearchFAB, {
+  Brokerage,
+} from "@/components/home/FloatingSearchFAB";
 
 // ---- Types ----
 interface GeoPoint {
@@ -44,14 +47,25 @@ type ExtendedApartment = Apartment & {
   LikeCount?: number;
   NumOfLikes?: number;
   GardenBalcony?: boolean;
+  hasBrokerage?: boolean; // Brokerage flag for filtering
 };
 
 export default function Map(): React.JSX.Element {
   // If your context is typed, remove the `as` cast:
   /*   const { mapLocationAllApt, allApartments } =
     useContext(ActiveApartmentContext) as ActiveApartmentContextType; */
-  const allApartments: ExtendedApartment[] = [];
-const mapLocationAllApt: ExtendedApartment[] = [
+  
+  // Store original unfiltered apartments list
+  const originalApartmentsRef = useRef<ExtendedApartment[]>([]);
+  const originalMapLocationRef = useRef<ExtendedApartment[]>([]);
+  
+  // State for filtered apartments
+  const [allApartments, setAllApartments] = useState<ExtendedApartment[]>([]);
+  const [mapLocationAllApt, setMapLocationAllApt] = useState<ExtendedApartment[]>([]);
+
+  // Initialize with sample data (in real app, this would come from API/context)
+  useEffect(() => {
+    const initialData: ExtendedApartment[] = [
   {
     ApartmentID: 101,
     Creator_ID: 1,
@@ -84,6 +98,7 @@ const mapLocationAllApt: ExtendedApartment[] = [
       '[{"value":"balcony"},{"value":"fridge"},{"value":"air conditioner"},{"value":"elevator"}]',
     NumOfLikes: 5,
     IsLikedByUser: false,
+    hasBrokerage: true, // Example: has brokerage
   },
   {
     ApartmentID: 102,
@@ -116,6 +131,7 @@ const mapLocationAllApt: ExtendedApartment[] = [
       '[{"value":"garden"},{"value":"parking"},{"value":"oven"},{"value":"dishwasher"}]',
     NumOfLikes: 12,
     IsLikedByUser: true,
+    hasBrokerage: false, // Example: no brokerage
   },
   {
     ApartmentID: 103,
@@ -148,6 +164,7 @@ const mapLocationAllApt: ExtendedApartment[] = [
       '[{"value":"fridge"},{"value":"microwave"},{"value":"oven"},{"value":"tv"}]',
     NumOfLikes: 3,
     IsLikedByUser: false,
+    hasBrokerage: true, // Example: has brokerage
   },
   {
     ApartmentID: 104,
@@ -181,8 +198,16 @@ const mapLocationAllApt: ExtendedApartment[] = [
       '[{"value":"balcony"},{"value":"air conditioner"},{"value":"washing machine"},{"value":"lamp"}]',
     NumOfLikes: 8,
     IsLikedByUser: false,
+    hasBrokerage: false, // Example: no brokerage
   },
 ];
+
+    // Set initial data to both refs and state
+    originalApartmentsRef.current = initialData;
+    originalMapLocationRef.current = initialData;
+    setAllApartments(initialData);
+    setMapLocationAllApt(initialData);
+  }, []);
 
   const [region, setRegion] = useState<Region | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -190,6 +215,41 @@ const mapLocationAllApt: ExtendedApartment[] = [
   const [selectedApartment, setSelectedApartment] = useState<Apartment | null>(
     null
   );
+
+  // Filter apartments based on search criteria
+  const handleApplyFilters = (filters: {
+    minPrice: number;
+    maxPrice: number;
+    brokerage: Brokerage;
+  }) => {
+    const { minPrice, maxPrice, brokerage } = filters;
+
+    // Filter from original list
+    const filtered = originalApartmentsRef.current.filter((apt) => {
+      // Price filter
+      const price = typeof apt.Price === "number" ? apt.Price : Number(apt.Price) || 0;
+      if (price < minPrice || price > maxPrice) {
+        return false;
+      }
+
+      // Brokerage filter
+      if (brokerage !== "any") {
+        const hasBrokerage = apt.hasBrokerage ?? false;
+        if (brokerage === "with" && !hasBrokerage) {
+          return false;
+        }
+        if (brokerage === "without" && hasBrokerage) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    // Update both state arrays
+    setAllApartments(filtered);
+    setMapLocationAllApt(filtered);
+  };
 
   // ---- Effects ----
   useEffect(() => {
@@ -311,6 +371,18 @@ const markers = useMemo(() => {
       <MapView style={styles.map} region={region}>
         {markers}
       </MapView>
+
+      {/* Floating Search FAB */}
+      <FloatingSearchFAB
+        onApplyFilters={handleApplyFilters}
+        minPriceBoundary={0}
+        maxPriceBoundary={30000}
+        initialFilters={{
+          minPrice: 0,
+          maxPrice: 30000,
+          brokerage: "any",
+        }}
+      />
 
       {selectedApartment && (
         <Modal
