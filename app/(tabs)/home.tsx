@@ -72,7 +72,7 @@ function hasGardenOrBalcony(apt: Apartment): boolean {
 
 function locationToAddress(loc: string | any): string {
   if (typeof loc === "string") {
-    const m = loc.match(/^{"address":\s*"([^"]+)"}/);
+    const m = loc.match(/"address"\s*:\s*"([^"]+)"/);
     if (m) return m[1];
     return loc;
   }

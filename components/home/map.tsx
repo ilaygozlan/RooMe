@@ -1,7 +1,8 @@
+// app/(tabs)/Map.tsx
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Dimensions,
@@ -10,299 +11,145 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import MapView, { Marker, Region } from "react-native-maps";
+import MapView, { Marker, type Region } from "react-native-maps";
 
-//import { ActiveApartmentContext } from "./contex/ActiveApartmentContext";
 import HouseLoading from "@/components/ui/loadingHouseSign";
-//import ApartmentDetails from "./ApartmentDetails";
-import FloatingSearchFAB, {
-  Brokerage,
-} from "@/components/home/FloatingSearchFAB";
+import FloatingSearchFAB, { type Brokerage } from "@/components/home/FloatingSearchFAB";
+import { useApartments, type Apartment } from "@/context/ApartmentsContext";
 
-// ---- Types ----
+// ---- Types (מקומיים בלבד להצגה במפה) ----
 interface GeoPoint {
   latitude: number;
   longitude: number;
 }
 
-interface MapApartment {
-  ApartmentID: string | number;
-  Location?: string | null; // JSON string with { latitude, longitude }
-  Price?: number | null;
-  Description?: string | null;
-  // ...you may add more fields as needed
-}
-
-interface Apartment extends MapApartment {
-  // Full apartment model (extend as needed)
-  [key: string]: unknown;
-}
-
-interface ActiveApartmentContextType {
-  mapLocationAllApt: MapApartment[];
-  allApartments: Apartment[];
-}
-
-type ExtendedApartment = Apartment & {
-  LikeCount?: number;
-  NumOfLikes?: number;
-  GardenBalcony?: boolean;
-  hasBrokerage?: boolean; // Brokerage flag for filtering
-};
-
+// ---- קומפוננטה ----
 export default function Map(): React.JSX.Element {
-  // If your context is typed, remove the `as` cast:
-  /*   const { mapLocationAllApt, allApartments } =
-    useContext(ActiveApartmentContext) as ActiveApartmentContextType; */
-  
-  // Store original unfiltered apartments list
-  const originalApartmentsRef = useRef<ExtendedApartment[]>([]);
-  const originalMapLocationRef = useRef<ExtendedApartment[]>([]);
-  
-  // State for filtered apartments
-  const [allApartments, setAllApartments] = useState<ExtendedApartment[]>([]);
-  const [mapLocationAllApt, setMapLocationAllApt] = useState<ExtendedApartment[]>([]);
-
-  // Initialize with sample data (in real app, this would come from API/context)
-  useEffect(() => {
-    const initialData: ExtendedApartment[] = [
-  {
-    ApartmentID: 101,
-    Creator_ID: 1,
-    Creator_FullName: "Daniel Cohen",
-    Creator_ProfilePicture: "https://i.pravatar.cc/150?img=12",
-    Images: [
-      "https://picsum.photos/800/400?random=1",
-      "https://picsum.photos/800/400?random=2",
-    ],
-    ApartmentType: 1, // 0=rental, 1=shared, 2=sublet
-    Location:
-      '{"address": "Dizengoff 100, Tel Aviv, Israel", "latitude": 32.0853, "longitude": 34.7818}',
-    Price: 5200,
-    Description:
-      "Modern apartment in the city center, fully furnished with balcony and elevator.",
-    AmountOfRooms: 3,
-    AllowPet: true,
-    AllowSmoking: false,
-    ParkingSpace: 1,
-    EntryDate: "2025-11-15T00:00:00",
-    ExitDate: null,
-    Rental_ContractLength: 12,
-    Rental_ExtensionPossible: true,
-    Shared_NumberOfRoommates: 2,
-    Roommates:
-      "Name:Noa|Gender:Female|Job:Designer|BirthDate:1998-09-01|Image:https://i.pravatar.cc/100?img=45||Name:Omer|Gender:Male|Job:Engineer|BirthDate:1997-05-10|Image:https://i.pravatar.cc/100?img=32",
-    Sublet_CanCancelWithoutPenalty: false,
-    Sublet_IsWholeProperty: false,
-    LabelsJson:
-      '[{"value":"balcony"},{"value":"fridge"},{"value":"air conditioner"},{"value":"elevator"}]',
-    NumOfLikes: 5,
-    IsLikedByUser: false,
-    hasBrokerage: true, // Example: has brokerage
-  },
-  {
-    ApartmentID: 102,
-    Creator_ID: 2,
-    Creator_FullName: "Yael Levy",
-    Creator_ProfilePicture: "https://i.pravatar.cc/150?img=30",
-    Images: [
-      "https://picsum.photos/800/400?random=3",
-      "https://picsum.photos/800/400?random=4",
-    ],
-    ApartmentType: 0,
-    Location:
-      '{"address": "Ben Gurion Blvd 15, Herzliya, Israel", "latitude": 32.1624, "longitude": 34.8447}',
-    Price: 7500,
-    Description:
-      "Spacious 4-room apartment near the beach, with private parking and garden.",
-    AmountOfRooms: 4,
-    AllowPet: false,
-    AllowSmoking: true,
-    ParkingSpace: 2,
-    EntryDate: "2025-12-01T00:00:00",
-    ExitDate: null,
-    Rental_ContractLength: 24,
-    Rental_ExtensionPossible: false,
-    Shared_NumberOfRoommates: null,
-    Roommates: "",
-    Sublet_CanCancelWithoutPenalty: false,
-    Sublet_IsWholeProperty: false,
-    LabelsJson:
-      '[{"value":"garden"},{"value":"parking"},{"value":"oven"},{"value":"dishwasher"}]',
-    NumOfLikes: 12,
-    IsLikedByUser: true,
-    hasBrokerage: false, // Example: no brokerage
-  },
-  {
-    ApartmentID: 103,
-    Creator_ID: 3,
-    Creator_FullName: "Nadav Ben Ari",
-    Creator_ProfilePicture: "https://i.pravatar.cc/150?img=58",
-    Images: [
-      "https://picsum.photos/800/400?random=5",
-      "https://picsum.photos/800/400?random=6",
-    ],
-    ApartmentType: 2,
-    Location:
-      '{"address": "HaNeviim 22, Jerusalem, Israel", "latitude": 31.7784, "longitude": 35.2066}',
-    Price: 4200,
-    Description:
-      "Short-term sublet for 3 months in a cozy 2-room apartment near city center.",
-    AmountOfRooms: 2,
-    AllowPet: false,
-    AllowSmoking: false,
-    ParkingSpace: 0,
-    EntryDate: "2025-11-10T00:00:00",
-    ExitDate: "2026-02-10T00:00:00",
-    Rental_ContractLength: null,
-    Rental_ExtensionPossible: false,
-    Shared_NumberOfRoommates: null,
-    Roommates: "",
-    Sublet_CanCancelWithoutPenalty: true,
-    Sublet_IsWholeProperty: true,
-    LabelsJson:
-      '[{"value":"fridge"},{"value":"microwave"},{"value":"oven"},{"value":"tv"}]',
-    NumOfLikes: 3,
-    IsLikedByUser: false,
-    hasBrokerage: true, // Example: has brokerage
-  },
-  {
-    ApartmentID: 104,
-    Creator_ID: 4,
-    Creator_FullName: "Lior Katz",
-    Creator_ProfilePicture: "https://i.pravatar.cc/150?img=70",
-    Images: [
-      "https://picsum.photos/800/400?random=7",
-      "https://picsum.photos/800/400?random=8",
-    ],
-    ApartmentType: 1,
-    Location:
-      '{"address": "Herzl 12, Ramat Gan, Israel", "latitude": 32.0684, "longitude": 34.8248}',
-    Price: 4800,
-    Description:
-      "Shared apartment close to university, suitable for students. Includes WiFi and AC.",
-    AmountOfRooms: 3,
-    AllowPet: true,
-    AllowSmoking: true,
-    ParkingSpace: 0,
-    EntryDate: "2025-11-20T00:00:00",
-    ExitDate: null,
-    Rental_ContractLength: 12,
-    Rental_ExtensionPossible: true,
-    Shared_NumberOfRoommates: 1,
-    Roommates:
-      "Name:Eden|Gender:Female|Job:Student|BirthDate:2000-03-15|Image:https://i.pravatar.cc/100?img=47",
-    Sublet_CanCancelWithoutPenalty: false,
-    Sublet_IsWholeProperty: false,
-    LabelsJson:
-      '[{"value":"balcony"},{"value":"air conditioner"},{"value":"washing machine"},{"value":"lamp"}]',
-    NumOfLikes: 8,
-    IsLikedByUser: false,
-    hasBrokerage: false, // Example: no brokerage
-  },
-];
-
-    // Set initial data to both refs and state
-    originalApartmentsRef.current = initialData;
-    originalMapLocationRef.current = initialData;
-    setAllApartments(initialData);
-    setMapLocationAllApt(initialData);
-  }, []);
-
-  const [region, setRegion] = useState<Region | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
-  const [selectedApartment, setSelectedApartment] = useState<Apartment | null>(
-    null
-  );
 
-  // Filter apartments based on search criteria
-  const handleApplyFilters = (filters: {
-    minPrice: number;
-    maxPrice: number;
-    brokerage: Brokerage;
-  }) => {
-    const { minPrice, maxPrice, brokerage } = filters;
+  // ----- חיבור לקונטקסט -----
+  const {
+    map,                      // { ids, loading, ... }
+    setMapBounds,             // (bounds) => void
+    setMapFilters,            // (filters) => void
+    refreshMap,               // () => Promise<void>
+    getApartmentsByIds,       // (ids: string[]) => Apartment[]
+  } = useApartments();
 
-    // Filter from original list
-    const filtered = originalApartmentsRef.current.filter((apt) => {
-      // Price filter
-      const price = typeof apt.Price === "number" ? apt.Price : Number(apt.Price) || 0;
-      if (price < minPrice || price > maxPrice) {
-        return false;
-      }
+  // ----- מצב מסך -----
+  const [region, setRegion] = useState<Region | null>(null);
+  const [bootLoading, setBootLoading] = useState<boolean>(true);
+  const [selectedApartment, setSelectedApartment] = useState<Apartment | null>(null);
 
-      // Brokerage filter
-      if (brokerage !== "any") {
-        const hasBrokerage = apt.hasBrokerage ?? false;
-        if (brokerage === "with" && !hasBrokerage) {
-          return false;
-        }
-        if (brokerage === "without" && hasBrokerage) {
-          return false;
-        }
-      }
+  // ----- רפרנסים -----
+  const mapRef = useRef<MapView>(null);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-      return true;
-    });
-
-    // Update both state arrays
-    setAllApartments(filtered);
-    setMapLocationAllApt(filtered);
+  // ----- עזרי מפה -----
+  const initialRegion: Region = {
+    latitude: 32.0853,      // TLV ברירת מחדל
+    longitude: 34.7818,
+    latitudeDelta: 0.25,
+    longitudeDelta: 0.25,
   };
 
-  // ---- Effects ----
+  const regionToBounds = (r: Region) => ({
+    north: r.latitude + r.latitudeDelta / 2,
+    south: r.latitude - r.latitudeDelta / 2,
+    east:  r.longitude + r.longitudeDelta / 2,
+    west:  r.longitude - r.longitudeDelta / 2,
+  });
+
+  // ----- קבלת מיקום משתמש + אתחול מפה -----
   useEffect(() => {
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted") {
           Alert.alert("הודעה", "כדי להשתמש במפה, יש לאשר גישה למיקום");
-          setLoading(false);
+          setRegion(initialRegion);
           return;
         }
 
         const servicesEnabled = await Location.hasServicesEnabledAsync();
         if (!servicesEnabled) {
-          Alert.alert(
-            "הודעה",
-            "שירותי המיקום כבויים. הפעל אותם בהגדרות המכשיר"
-          );
-          setLoading(false);
+          Alert.alert("הודעה", "שירותי המיקום כבויים. הפעל אותם בהגדרות המכשיר");
+          setRegion(initialRegion);
           return;
         }
 
-        const location = await Location.getCurrentPositionAsync({});
+        const loc = await Location.getCurrentPositionAsync({});
         setRegion({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+          latitudeDelta: 0.08,
+          longitudeDelta: 0.08,
         });
-      } catch (e) {
-        console.warn("Location error:", e);
+      } catch {
+        setRegion(initialRegion);
       } finally {
-        setLoading(false);
+        setBootLoading(false);
       }
     })();
   }, []);
 
-  // ---- Helpers ----
+  // ----- טעינת 50 הדירות הראשונות כאשר המפה מוכנה -----
+  const onMapReady = useCallback(() => {
+    if (!mapRef.current) return;
+
+    const tryRefresh = (bounds: { north:number; south:number; east:number; west:number }) => {
+      setMapBounds(bounds);
+      refreshMap(); // יביא עד 50 לפי ה־bounds וה־filters הנוכחיים
+    };
+
+    // פילטרים ריקים כברירת מחדל (רק טווח מחיר אם נרצה אח"כ)
+    setMapFilters({});
+
+    // מנסה להשיג גבולות מהמפה; אם אין—נופל לאיזור הראשוני
+    // @ts-ignore: getMapBoundaries לא מוקלד תמיד
+    if (mapRef.current.getMapBoundaries) {
+      // @ts-ignore
+      mapRef.current.getMapBoundaries()
+        .then(({ northEast, southWest }) => {
+          tryRefresh({
+            north: northEast.latitude,
+            east:  northEast.longitude,
+            south: southWest.latitude,
+            west:  southWest.longitude,
+          });
+        })
+        .catch(() => {
+          tryRefresh(regionToBounds(region ?? initialRegion));
+        });
+    } else {
+      tryRefresh(regionToBounds(region ?? initialRegion));
+    }
+  }, [region, setMapBounds, setMapFilters, refreshMap]);
+
+  // ----- רענון אחרי גרירת מפה (debounce) -----
+  const onRegionChangeComplete = useCallback((r: Region) => {
+    setRegion(r);
+    setMapBounds(regionToBounds(r));
+    if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    refreshTimer.current = setTimeout(() => {
+      refreshMap();
+    }, 250);
+  }, [setMapBounds, refreshMap]);
+
+  // ----- עזר: פיענוח קואורדינטות מתוך שדה Location -----
   const parseLocation = (loc?: string | null): GeoPoint | null => {
     if (!loc || typeof loc !== "string") return null;
     const trimmed = loc.trim();
     if (!trimmed.startsWith("{")) return null;
-
     try {
       const obj = JSON.parse(trimmed) as Partial<GeoPoint>;
-      const { latitude, longitude } = obj;
       if (
-        typeof latitude === "number" &&
-        typeof longitude === "number" &&
-        Number.isFinite(latitude) &&
-        Number.isFinite(longitude)
+        typeof obj.latitude === "number" &&
+        typeof obj.longitude === "number" &&
+        Number.isFinite(obj.latitude) &&
+        Number.isFinite(obj.longitude)
       ) {
-        return { latitude, longitude };
+        return { latitude: obj.latitude, longitude: obj.longitude };
       }
       return null;
     } catch {
@@ -310,54 +157,77 @@ export default function Map(): React.JSX.Element {
     }
   };
 
-const markers = useMemo(() => {
-  return mapLocationAllApt
-    .map((apt) => {
-      const point = parseLocation(apt.Location);
-      if (!point) return null;
+  // ----- הבאת הדירות מהקונטקסט לפי map.ids -----
+  const apartments: Apartment[] = useMemo(
+    () => getApartmentsByIds(map.ids),
+    [map.ids, getApartmentsByIds]
+  );
 
-      const selected = allApartments.find(
-        (a) => a.ApartmentID === apt.ApartmentID
-      );
+  // ----- בניית מרקרים -----
+  const markers = useMemo(() => {
+    return apartments
+      .map((apt) => {
+        const point = parseLocation(apt.Location);
+        if (!point) return null;
 
-      const title =
-        typeof apt.Price === "number"
-          ? `${apt.Price.toLocaleString("he-IL")} ₪`
-          : "—";
+        const title =
+          typeof apt.Price === "number"
+            ? `${apt.Price.toLocaleString("he-IL")} ₪`
+            : "—";
 
-      const description = apt.Description || "אין תיאור";
+        const description = apt.Description || "אין תיאור";
 
-      return (
-        <Marker
-          key={String(apt.ApartmentID)}
-          coordinate={point}
-          title={title}
-          description={description}
-          onPress={() => setSelectedApartment(selected ?? null)}
-        >
-          {/* 🏠 Custom house icon instead of default pin */}
-          <View
-            style={{
-              backgroundColor: "white",
-              borderRadius: 25,
-              padding: 6,
-              shadowColor: "#000",
-              shadowOpacity: 0.3,
-              shadowOffset: { width: 0, height: 2 },
-              shadowRadius: 4,
-              elevation: 6,
-            }}
+        return (
+          <Marker
+            key={String(apt.ApartmentID)}
+            coordinate={point}
+            title={title}
+            description={description}
+            onPress={() => setSelectedApartment(apt)}
           >
-            <Ionicons name="home" size={28} color="#E3965A" />
-          </View>
-        </Marker>
-      );
-    })
-    .filter(Boolean) as React.ReactElement[];
-}, [mapLocationAllApt, allApartments]);
+            {/* 🏠 אייקון מותאם במקום פין ברירת מחדל */}
+            <View
+              style={{
+                backgroundColor: "white",
+                borderRadius: 25,
+                padding: 6,
+                shadowColor: "#000",
+                shadowOpacity: 0.3,
+                shadowOffset: { width: 0, height: 2 },
+                shadowRadius: 4,
+                elevation: 6,
+              }}
+            >
+              <Ionicons name="home" size={28} color="#E3965A" />
+            </View>
+          </Marker>
+        );
+      })
+      .filter(Boolean) as React.ReactElement[];
+  }, [apartments]);
 
-  // ---- Render ----
-  if (loading || !region) {
+  // ----- טיפול בסינון מה־FAB (מחבר ל־map.filters בקונטקסט) -----
+  const handleApplyFilters = useCallback((filters: {
+    minPrice: number;
+    maxPrice: number;
+    brokerage: Brokerage; // לא נתמך בקונטקסט כרגע – נתעלם, או תוכל למפות ל־features במידת הצורך
+  }) => {
+    const { minPrice, maxPrice } = filters;
+
+    // מעדכן פילטרים גלובליים של המפה בקונטקסט (רק מחיר בשלב זה)
+    setMapFilters({
+      minPrice,
+      maxPrice,
+      // אם תרצה למפות "ברוקר" ל־features/LabelsJson בהמשך, תוכל להוסיף כאן:
+      // features: filters.brokerage === "with" ? ["brokerage"] : filters.brokerage === "without" ? ["no_brokerage"] : []
+    });
+
+    // מרענן לפי אותם גבולות שכבר הוגדרו (setMapBounds נקרא כבר בשינוי region)
+    refreshMap();
+  }, [setMapFilters, refreshMap]);
+
+  // ----- מסכי טעינה -----
+  if (bootLoading || !region) {
     return <HouseLoading text="מעלה דירות על המפה" />;
   }
 
@@ -368,20 +238,29 @@ const markers = useMemo(() => {
         <Feather name="arrow-left" size={24} color="#fff" />
       </TouchableOpacity>
 
-      <MapView style={styles.map} region={region}>
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        initialRegion={region}
+        onMapReady={onMapReady}
+        onRegionChangeComplete={onRegionChangeComplete}
+      >
         {markers}
       </MapView>
 
-      {/* Floating Search FAB */}
+      {/* אינדיקציית טעינה בעת רענון תוצאות מפה */}
+      {map.loading && (
+        <View style={{ position: "absolute", top: 12, alignSelf: "center" }}>
+          <HouseLoading text="טוען דירות במפה..." overlay={false} />
+        </View>
+      )}
+
+      {/* Floating Search FAB – מעדכן פילטרים בקונטקסט ומרענן */}
       <FloatingSearchFAB
         onApplyFilters={handleApplyFilters}
         minPriceBoundary={0}
         maxPriceBoundary={30000}
-        initialFilters={{
-          minPrice: 0,
-          maxPrice: 30000,
-          brokerage: "any",
-        }}
+        initialFilters={{ minPrice: 0, maxPrice: 30000, brokerage: "any" }}
       />
 
       {selectedApartment && (
@@ -393,11 +272,14 @@ const markers = useMemo(() => {
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              {/*    <ApartmentDetails
+              {/* חבר כאן את קומפוננטת הפרטים שלך */}
+              {/* 
+              <ApartmentDetails
                 key={String(selectedApartment.ApartmentID)}
                 apt={selectedApartment}
                 onClose={() => setSelectedApartment(null)}
-              /> */}
+              />
+              */}
             </View>
           </View>
         </Modal>
@@ -413,11 +295,6 @@ const styles = StyleSheet.create({
     width: Dimensions.get("window").width,
     height: Dimensions.get("window").height,
   },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   backButton: {
     position: "absolute",
     top: 80,
@@ -426,35 +303,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(253, 164, 47, 0.7)",
     padding: 10,
     borderRadius: 30,
-  },
-  callout: {
-    width: 200,
-    padding: 10,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-  },
-  calloutTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 5,
-    textAlign: "right",
-    color: "#333",
-  },
-  calloutDescription: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 10,
-    textAlign: "right",
-  },
-  calloutButton: {
-    backgroundColor: "#5C67F2",
-    paddingVertical: 8,
-    borderRadius: 5,
-  },
-  calloutButtonText: {
-    color: "#fff",
-    textAlign: "center",
-    fontWeight: "bold",
   },
   modalOverlay: {
     flex: 1,
@@ -472,4 +320,3 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
 });
-
