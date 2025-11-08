@@ -16,6 +16,7 @@ import {
 import ApartmentGallery from "@/components/apartment/apartmentGallery";
 import BoostButton from "@/components/apartment/boostBtn";
 import OpenHouseButton from "@/components/apartment/openHouseButton";
+import SaveButton from "@/components/apartment/saveApartmentBtn";
 
 import { type Apartment } from "@/context/ApartmentsContext";
 
@@ -115,10 +116,7 @@ export default function ApartmentCard({
   return (
     <View
       key={apt.ApartmentID}
-      style={[
-        styles.card,
-        { shadowColor: getBorderColor(apt.ApartmentType) },
-      ]}
+      style={[styles.card, { shadowColor: getBorderColor(apt.ApartmentType) }]}
     >
       <View
         style={[
@@ -158,9 +156,7 @@ export default function ApartmentCard({
 
         <TouchableOpacity onPress={handleCardPress}>
           <View style={styles.details}>
-            <Text style={styles.title}>
-              {locationToAddress(apt.Location)}
-            </Text>
+            <Text style={styles.title}>{locationToAddress(apt.Location)}</Text>
             <Text style={styles.description}>{apt.Description}</Text>
             <Text style={styles.price}>{apt.Price} ש"ח</Text>
           </View>
@@ -177,7 +173,7 @@ export default function ApartmentCard({
           <TouchableOpacity onPress={() => handleShareApartment(apt)}>
             <MaterialCommunityIcons
               name="share-outline"
-              size={24}
+              size={26}
               color="gray"
             />
           </TouchableOpacity>
@@ -187,6 +183,12 @@ export default function ApartmentCard({
             location={typeof apt.Location === "string" ? apt.Location : ""}
             userOwnerId={apt.Creator_ID ?? 0}
           />
+          <SaveButton
+            apartmentId={apt.ApartmentID}
+            isSavedByUser={/* apt.IsSavedByUser */ false} // boolean
+            numOfSaves={/* apt.NumOfSaves ?? */ 0} // optional
+            showCount={false}
+          /> 
         </View>
       )}
     </View>
@@ -275,4 +277,3 @@ const styles = StyleSheet.create({
     color: "#333",
   },
 });
-

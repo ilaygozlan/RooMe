@@ -1,4 +1,3 @@
-// app/(tabs)/home.tsx
 import React, {
   useCallback,
   useEffect,

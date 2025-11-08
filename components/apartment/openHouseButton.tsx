@@ -309,7 +309,7 @@ export default function OpenHouseButton({
   return (
     <View>
       <TouchableOpacity onPress={() => setModalVisible(true)}>
-        <MaterialCommunityIcons name="calendar-outline" size={24} color="gray" />
+        <MaterialCommunityIcons name="calendar-outline" size={25} color="gray" />
       </TouchableOpacity>
 
       <Modal visible={modalVisible} transparent animationType="fade">
