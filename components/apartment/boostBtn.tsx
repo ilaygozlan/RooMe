@@ -224,8 +224,8 @@ const RocketSVG = ({ boosted }: { boosted: boolean }) => (
         <Stop offset="100%" stopColor="#E63946" />
       </LinearGradient>
       <LinearGradient id="finBoost" x1="0%" y1="0%" x2="0%" y2="100%">
-        <Stop offset="0%" stopColor="#FFAB76" />
-        <Stop offset="100%" stopColor="#E26C29" />
+      <Stop offset="0%" stopColor="#FF6B6B" />
+        <Stop offset="100%" stopColor="#E63946" />
       </LinearGradient>
     </Defs>
 
@@ -267,8 +267,8 @@ const RocketSVG = ({ boosted }: { boosted: boolean }) => (
       {/* Nozzle */}
       <Path
         d="M44 75 L56 75 L52 82 Q50 84 48 82 Z"
-        fill="#A6A6A6"
-        stroke="#6E6E6E"
+        fill="#FF6B6B"
+        stroke="#E63946"
         strokeWidth="2"
       />
     </G>
