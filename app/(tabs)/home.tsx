@@ -1,6 +1,4 @@
 // app/(tabs)/home.tsx
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import React, {
   useCallback,
   useEffect,
@@ -10,26 +8,19 @@ import React, {
 } from "react";
 import {
   Animated,
-  Dimensions,
   FlatList,
-  Image,
   ListRenderItemInfo,
   Modal,
-  Platform,
-  Share,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import ApartmentCard from "@/components/apartment/apartmentCard";
 import ApartmentDetails from "@/components/apartment/apartmentDetails";
-import ApartmentGallery from "@/components/apartment/apartmentGallery";
-import OpenHouseButton from "@/components/apartment/openHouseButton";
 import SearchBar from "@/components/home/searchBar";
 import HouseLoading from "@/components/ui/loadingHouseSign";
-import BoostButton from "@/components/apartment/boostBtn";
 
 import { useApartments, type Apartment } from "@/context/ApartmentsContext";
 
@@ -54,22 +45,6 @@ type ApartmentProps = {
 };
 
 // ===== Utils =====
-const windowWidth = Dimensions.get("window").width;
-
-export const hexToRgba = (hex: string, alpha: number = 0.5): string => {
-  let cleanHex = hex.replace("#", "");
-  if (cleanHex.length === 3)
-    cleanHex = cleanHex
-      .split("")
-      .map((c) => c + c)
-      .join("");
-  if (cleanHex.length !== 6) throw new Error(`Invalid HEX color: ${hex}`);
-  const num = parseInt(cleanHex, 16);
-  const r = (num >> 16) & 255;
-  const g = (num >> 8) & 255;
-  const b = num & 255;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
 
 function hasGardenOrBalcony(apt: Apartment): boolean {
   try {
@@ -83,15 +58,6 @@ function hasGardenOrBalcony(apt: Apartment): boolean {
   } catch {
     return false;
   }
-}
-
-function locationToAddress(loc: string | any): string {
-  if (typeof loc === "string") {
-    const m = loc.match(/"address"\s*:\s*"([^"]+)"/);
-    if (m) return m[1];
-    return loc;
-  }
-  return loc?.address ?? "מיקום לא זמין";
 }
 
 function normalizeString(str: string | undefined | null): string {
@@ -127,39 +93,11 @@ function getDistance(
   return R * c;
 }
 
-const getBorderColor = (type: number): string => {
-  switch (type) {
-    case 0:
-      return "#F0C27B";
-    case 1:
-      return "#F4B982";
-    case 2:
-      return "#E3965A";
-    default:
-      return "#ddd";
-  }
-};
-
-const getTypeName = (type: number): string => {
-  switch (type) {
-    case 0:
-      return "Rental";
-    case 1:
-      return "Roommates";
-    case 2:
-      return "Sublet";
-    default:
-      return "Unknown";
-  }
-};
-
 // ===== Component =====
 export default function HomeScreen(props: ApartmentProps) {
   const { top } = useSafeAreaInsets();
-  const [width, setWidth] = useState(0);
   const lastScrollY = useRef(0);
   const searchBarTranslateY = useRef(new Animated.Value(0)).current;
-  const router = useRouter();
 
   const { home, loadHomeFirstPage, loadHomeNextPage, getApartmentsByIds } =
     useApartments();
@@ -215,17 +153,6 @@ export default function HomeScreen(props: ApartmentProps) {
       setPreviewSearchApt(baseApartments);
     }
   }, [baseApartments, index]);
-
-  const handleShareApartment = async (apt: Apartment): Promise<void> => {
-    const message = `דירה שווה שמצאתי באפליקציה:\n\nמיקום: ${locationToAddress(
-      apt.Location
-    )}\nמחיר: ${apt.Price} ש"ח\n\n${apt.Description}`;
-    try {
-      await Share.share({ message });
-    } catch (error) {
-      console.error("Error sharing:", error);
-    }
-  };
 
   // --- סינון לוקאלי על בסיס baseApartments ---
   const SearchApartments = (filters?: FiltersJson): void => {
@@ -419,90 +346,16 @@ export default function HomeScreen(props: ApartmentProps) {
   // --- FlatList: renderItem ---
   const renderItem = useCallback(
     ({ item: apt }: ListRenderItemInfo<Apartment>) => (
-      <View
-        key={apt.ApartmentID}
-        style={[
-          styles.card,
-          { shadowColor: getBorderColor(apt.ApartmentType) },
-        ]}
-      >
-        <View
-          style={[
-            styles.typeLabel,
-            { backgroundColor: hexToRgba(getBorderColor(apt.ApartmentType)) },
-          ]}
-        >
-          <Text style={styles.typeText}>{getTypeName(apt.ApartmentType)}</Text>
-        </View>
-
-        <TouchableOpacity
-          onPress={() =>
-            router.push({
-              pathname: "UserProfile" as any,
-              params: { userId: apt.Creator_ID },
-            })
-          }
-        >
-          <View style={styles.creatorContainer}>
-            <Image
-              source={{
-                uri:
-                  apt.Creator_ProfilePicture ||
-                  "https://example.com/default-profile.png",
-              }}
-              style={styles.creatorImage}
-            />
-            <Text style={styles.creatorName}>{apt.Creator_FullName}</Text>
-          </View>
-        </TouchableOpacity>
-
-        <View
-          style={styles.cardContent}
-          onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
-        >
-          <ApartmentGallery images={apt.Images} width={width} />
-
-          <TouchableOpacity
-            onPress={() => {
-              setSelectedApartment(apt);
-              setShowApartmentDetails(true);
-            }}
-          >
-            <View style={styles.details}>
-              <Text style={styles.title}>
-                {locationToAddress(apt.Location)}
-              </Text>
-              <Text style={styles.description}>{apt.Description}</Text>
-              <Text style={styles.price}>{apt.Price} ש"ח</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {!props.hideIcons && (
-          <View style={styles.iconRow}>
-            <BoostButton
-              apartmentId={apt.ApartmentID}
-              isBoostedByUser={/* apt.IsBoostedByUser */ false}
-              numOfBoosts={/* apt.NumOfBoosts */ 0}
-            />
-            <TouchableOpacity onPress={() => handleShareApartment(apt)}>
-              <MaterialCommunityIcons
-                name="share-outline"
-                size={24}
-                color="gray"
-              />
-            </TouchableOpacity>
-            <OpenHouseButton
-              apartmentId={apt.ApartmentID}
-              userId={0}
-              location={typeof apt.Location === "string" ? apt.Location : ""}
-              userOwnerId={apt.Creator_ID ?? 0}
-            />
-          </View>
-        )}
-      </View>
+      <ApartmentCard
+        apartment={apt}
+        hideIcons={props.hideIcons}
+        onPress={(apartment) => {
+          setSelectedApartment(apartment);
+          setShowApartmentDetails(true);
+        }}
+      />
     ),
-    [router, width, props.hideIcons]
+    [props.hideIcons]
   );
 
   const keyExtractor = useCallback(
@@ -576,13 +429,6 @@ export default function HomeScreen(props: ApartmentProps) {
             </View>
           ) : null
         }
-        ListFooterComponent={
-          home.loading && previewSearchApt.length > 0 ? (
-            <View style={{ paddingVertical: 32, alignItems: "center" }}>
-              <HouseLoading text="טוען דירות נוספות..." overlay={false} />
-            </View>
-          ) : null
-        }
         refreshing={home.loading && previewSearchApt.length === 0}
         onRefresh={() => {
           // רענון ראשי – נטען עמוד ראשון מחדש
@@ -612,7 +458,13 @@ export default function HomeScreen(props: ApartmentProps) {
           />
         )}
       </Modal>
-
+      {/* Loading overlay when fetching exttra apartments */}
+      {home.loading && previewSearchApt.length > 0 ? (
+        <View style={{ paddingVertical: 32, alignItems: "center" }}>
+          <HouseLoading text="טוען דירות נוספות..." overlay={false} />
+        </View>
+      ) : null}
+      
       {/* Loading overlay when first fetching apartments */}
       {home.loading && previewSearchApt.length === 0 && (
         <HouseLoading text="טוען דירות..." overlay={true} />
@@ -629,91 +481,5 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: "transparent",
     zIndex: 10,
-  },
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    backgroundColor: "#F0F0F0",
-    paddingTop: 10,
-  },
-  card: {
-    alignSelf: "center",
-    width: windowWidth - 40,
-    backgroundColor: "white",
-    borderRadius: 10,
-    margin: 10,
-    borderWidth: 3,
-    borderColor: "#fff",
-    ...Platform.select({
-      ios: {
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 5,
-      },
-    }),
-  },
-  cardContent: {
-    // Container for apartment content
-  },
-  details: {
-    padding: 10,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: "bold",
-    textAlign: "right",
-  },
-  description: {
-    fontSize: 14,
-    color: "gray",
-    textAlign: "right",
-  },
-  price: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginTop: 5,
-    textAlign: "right",
-  },
-  iconRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    padding: 5,
-  },
-  typeText: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "black",
-    textTransform: "uppercase",
-  },
-  typeLabel: {
-    position: "absolute",
-    zIndex: 2,
-    top: 12,
-    left: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 5,
-    alignSelf: "flex-start",
-  },
-  creatorContainer: {
-    flexDirection: "row-reverse",
-    alignItems: "center",
-    margin: 10,
-  },
-  creatorImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginLeft: 10,
-    borderWidth: 1,
-    borderColor: "#E3965A",
-  },
-  creatorName: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
   },
 });

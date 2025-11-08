@@ -29,43 +29,32 @@ import { labelTranslations } from "@/utils/labelTranslations";
 type LabelItem = { value?: string } | string;
 
 // Core apartment shape (covering all used fields)
-export interface Apartment {
-  ApartmentID: number | string;
-  UserID?: number | string;
-  Creator_ID?: number | string;
-  Creator_FullName?: string;
-  Creator_ProfilePicture?: string | null;
-
-  Images?: string[]; // For ApartmentGallery
-
-  ApartmentType: 0 | 1 | 2; // 0=Rent, 1=Shared, 2=Sublet
-
-  // Common fields
-  Location?: string; // Sometimes JSON string with { address }
-  Price?: number | string;
-  Description?: string;
-  AmountOfRooms?: number | string;
-  AllowPet?: boolean;
-  AllowSmoking?: boolean;
-  ParkingSpace?: number | string;
-  EntryDate?: string; // ISO
-  ExitDate?: string | null; // ISO or null
-
-  // Rent
-  Rental_ContractLength?: number | string;
-  Rental_ExtensionPossible?: boolean;
-
-  // Shared (roommates)
-  Shared_NumberOfRoommates?: number | string;
-  Roommates?: string; // encoded with "||" and "|"
-
-  // Sublet
-  Sublet_CanCancelWithoutPenalty?: boolean;
-  Sublet_IsWholeProperty?: boolean;
-
-  // Labels
-  LabelsJson?: string;
-}
+export type Apartment = {
+  ApartmentID: number;
+  Creator_ID: number;
+  Creator_FullName: string;
+  Creator_ProfilePicture: string;
+  Images: string[];
+  ApartmentType: 0 | 1 | 2; // 0=rental, 1=shared, 2=sublet
+  Location: string; // stringified JSON { address: string }
+  Price: number;
+  Description: string;
+  AmountOfRooms: number;
+  AllowPet: boolean;
+  AllowSmoking: boolean;
+  ParkingSpace: number;
+  EntryDate: string;
+  ExitDate: string | null;
+  Rental_ContractLength: number | null;
+  Rental_ExtensionPossible: boolean;
+  Shared_NumberOfRoommates: number | null;
+  Roommates: string; // pipe-separated string
+  Sublet_CanCancelWithoutPenalty: boolean;
+  Sublet_IsWholeProperty: boolean;
+  LabelsJson: string; // stringified array of { value: string }
+  NumOfLikes: number;
+  IsLikedByUser: boolean;
+};
 
 type Props = {
   apt: Apartment;
@@ -98,8 +87,8 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
     // Fetch uploader details if exists
     const fetchUserInfo = async () => {
       try {
-        if (!apt.UserID) return;
-        const res = await fetch(`${API}User/GetUserById/${apt.UserID}`);
+        if (!apt.Creator_ID) return;
+        const res = await fetch(`${API}User/GetUserById/${apt.Creator_ID}`);
         const data = await res.json();
         setUserInfo(data);
       } catch (err) {
@@ -107,7 +96,7 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
       }
     };
     fetchUserInfo();
-  }, [apt.UserID]);
+  }, [apt.Creator_ID]);
 
   useEffect(() => {
     // Auto-advance roommates carousel for "Shared" apartments

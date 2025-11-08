@@ -16,6 +16,7 @@ import MapView, { Marker, type Region } from "react-native-maps";
 import HouseLoading from "@/components/ui/loadingHouseSign";
 import FloatingSearchFAB, { type Brokerage } from "@/components/home/FloatingSearchFAB";
 import { useApartments, type Apartment } from "@/context/ApartmentsContext";
+import ApartmentDetails from "@/components/apartment/apartmentDetails";
 
 // ---- Types (מקומיים בלבד להצגה במפה) ----
 interface GeoPoint {
@@ -291,14 +292,14 @@ export default function Map(): React.JSX.Element {
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              {/* חבר כאן את קומפוננטת הפרטים שלך */}
-              {/* 
+            {/* חבר כאן את קומפוננטת הפרטים שלך */}
+              
               <ApartmentDetails
                 key={String(selectedApartment.ApartmentID)}
                 apt={selectedApartment}
                 onClose={() => setSelectedApartment(null)}
               />
-              */}
+             
             </View>
           </View>
         </Modal>
