@@ -99,11 +99,16 @@ export default function Map(): React.JSX.Element {
 
     const tryRefresh = (bounds: { north:number; south:number; east:number; west:number }) => {
       setMapBounds(bounds);
-      refreshMap(); // יביא עד 50 לפי ה־bounds וה־filters הנוכחיים
+      // אם אין פילטרים, אתחל עם טווח מחיר ברירת מחדל
+      // useEffect יטפל ב-refresh אוטומטית אחרי שהפילטרים וה-bounds יתעדכנו
+      if (!map.filters || Object.keys(map.filters).length === 0) {
+        setMapFilters({
+          minPrice: 0,
+          maxPrice: 30000,
+        });
+      }
+      // refreshMap יקרא אוטומטית דרך useEffect כאשר גם bounds וגם filters מוגדרים
     };
-
-    // פילטרים ריקים כברירת מחדל (רק טווח מחיר אם נרצה אח"כ)
-    setMapFilters({});
 
     // מנסה להשיג גבולות מהמפה; אם אין—נופל לאיזור הראשוני
     // @ts-ignore: getMapBoundaries לא מוקלד תמיד
@@ -124,7 +129,7 @@ export default function Map(): React.JSX.Element {
     } else {
       tryRefresh(regionToBounds(region ?? initialRegion));
     }
-  }, [region, setMapBounds, setMapFilters, refreshMap]);
+  }, [region, setMapBounds, setMapFilters, map.filters]);
 
   // ----- רענון אחרי גרירת מפה (debounce) -----
   const onRegionChangeComplete = useCallback((r: Region) => {
@@ -135,6 +140,17 @@ export default function Map(): React.JSX.Element {
       refreshMap();
     }, 250);
   }, [setMapBounds, refreshMap]);
+
+  // ----- רענון אוטומטי כאשר הפילטרים משתנים -----
+  useEffect(() => {
+    // רק אם יש bounds ויש פילטרים (כולל אתחול ראשוני)
+    if (map.bounds && map.filters && Object.keys(map.filters).length > 0) {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+      refreshTimer.current = setTimeout(() => {
+        refreshMap();
+      }, 100);
+    }
+  }, [map.filters, map.bounds, refreshMap]);
 
   // ----- עזר: פיענוח קואורדינטות מתוך שדה Location -----
   const parseLocation = (loc?: string | null): GeoPoint | null => {
@@ -222,9 +238,8 @@ export default function Map(): React.JSX.Element {
       // features: filters.brokerage === "with" ? ["brokerage"] : filters.brokerage === "without" ? ["no_brokerage"] : []
     });
 
-    // מרענן לפי אותם גבולות שכבר הוגדרו (setMapBounds נקרא כבר בשינוי region)
-    refreshMap();
-  }, [setMapFilters, refreshMap]);
+    // refreshMap יקרא אוטומטית דרך useEffect כאשר map.filters משתנה
+  }, [setMapFilters]);
 
   // ----- מסכי טעינה -----
   if (bootLoading || !region) {
@@ -260,7 +275,11 @@ export default function Map(): React.JSX.Element {
         onApplyFilters={handleApplyFilters}
         minPriceBoundary={0}
         maxPriceBoundary={30000}
-        initialFilters={{ minPrice: 0, maxPrice: 30000, brokerage: "any" }}
+        initialFilters={{
+          minPrice: map.filters?.minPrice ?? 0,
+          maxPrice: map.filters?.maxPrice ?? 30000,
+          brokerage: "any"
+        }}
       />
 
       {selectedApartment && (
