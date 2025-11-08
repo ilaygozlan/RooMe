@@ -20,6 +20,7 @@ import ApartmentCard from "@/components/apartment/apartmentCard";
 import ApartmentDetails from "@/components/apartment/apartmentDetails";
 import SearchBar from "@/components/home/searchBar";
 import HouseLoading from "@/components/ui/loadingHouseSign";
+import { useToast, toast } from "@/lib/ui/ToastAlertsProvider";
 
 import { useApartments, type Apartment } from "@/context/ApartmentsContext";
 
@@ -97,7 +98,7 @@ export default function HomeScreen(props: ApartmentProps) {
   const { top } = useSafeAreaInsets();
   const lastScrollY = useRef(0);
   const searchBarTranslateY = useRef(new Animated.Value(0)).current;
-
+  const { showToast } = useToast();
   const { home, loadHomeFirstPage, loadHomeNextPage, getApartmentsByIds } =
     useApartments();
 
@@ -141,6 +142,7 @@ export default function HomeScreen(props: ApartmentProps) {
 
   // אתחול התצוגה אחרי הגעת נתונים + עדכון כאשר baseApartments משתנה (טעינת עמודים נוספים)
   useEffect(() => {
+    toast.success(showToast, "נשמר!", "הדירה הוספה לספריות שלך");
     if (!initializedRef.current && baseApartments.length > 0) {
       setPreviewSearchApt(baseApartments);
       console.log(baseApartments.length);
@@ -463,7 +465,7 @@ export default function HomeScreen(props: ApartmentProps) {
           <HouseLoading text="טוען דירות נוספות..." overlay={false} />
         </View>
       ) : null}
-      
+
       {/* Loading overlay when first fetching apartments */}
       {home.loading && previewSearchApt.length === 0 && (
         <HouseLoading text="טוען דירות..." overlay={true} />
