@@ -142,7 +142,6 @@ export default function HomeScreen(props: ApartmentProps) {
 
   // אתחול התצוגה אחרי הגעת נתונים + עדכון כאשר baseApartments משתנה (טעינת עמודים נוספים)
   useEffect(() => {
-    toast.success(showToast, "נשמר!", "הדירה הוספה לספריות שלך");
     if (!initializedRef.current && baseApartments.length > 0) {
       setPreviewSearchApt(baseApartments);
       console.log(baseApartments.length);

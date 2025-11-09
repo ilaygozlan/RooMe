@@ -9,29 +9,29 @@
 // - Uses @expo/vector-icons; install if needed: `npx expo install @expo/vector-icons`
 // - No external toast libs required.
 
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, {
   createContext,
+  ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
-  useEffect,
-  ReactNode,
 } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
   Animated,
+  Dimensions,
   Easing,
   I18nManager,
   Platform,
   Pressable,
-  Dimensions,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 type ToastType = "success" | "error" | "info" | "warning" | "boost";
 type Placement = "top" | "center" | "bottom";
@@ -552,14 +552,34 @@ const styles = StyleSheet.create({
 // ---------- Example helpers ----------
 /** Quick helpers you can import */
 export const toast = {
-  success: (show: (o: ToastOptions) => string, title: string, message?: string) =>
-    show({ type: "success", title, message }),
-  error: (show: (o: ToastOptions) => string, title: string, message?: string) =>
-    show({ type: "error", title, message, duration: 5000 }),
-  info: (show: (o: ToastOptions) => string, title: string, message?: string) =>
-    show({ type: "info", title, message }),
-  warning: (show: (o: ToastOptions) => string, title: string, message?: string) =>
-    show({ type: "warning", title, message }),
-  boost: (show: (o: ToastOptions) => string, title: string, message?: string) =>
-    show({ type: "boost", title, message, iconName: "rocket-launch" }),
+  success: (
+    show: (o: ToastOptions) => string,
+    title: string,
+    message?: string,
+    options?: { placement?: Placement; position?: ToastOptions["position"] }
+  ) => show({ type: "success", title, message, ...options }),
+  error: (
+    show: (o: ToastOptions) => string,
+    title: string,
+    message?: string,
+    options?: { placement?: Placement; position?: ToastOptions["position"] }
+  ) => show({ type: "error", title, message, duration: 5000, ...options }),
+  info: (
+    show: (o: ToastOptions) => string,
+    title: string,
+    message?: string,
+    options?: { placement?: Placement; position?: ToastOptions["position"] }
+  ) => show({ type: "info", title, message, ...options }),
+  warning: (
+    show: (o: ToastOptions) => string,
+    title: string,
+    message?: string,
+    options?: { placement?: Placement; position?: ToastOptions["position"] }
+  ) => show({ type: "warning", title, message, ...options }),
+  boost: (
+    show: (o: ToastOptions) => string,
+    title: string,
+    message?: string,
+    options?: { placement?: Placement; position?: ToastOptions["position"] }
+  ) => show({ type: "boost", title, message, iconName: "rocket-launch", ...options }),
 };
