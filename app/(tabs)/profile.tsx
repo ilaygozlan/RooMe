@@ -1,30 +1,168 @@
-import Button from "@/components/ui/Button";
-import Card from "@/components/ui/Card";
-import Header from "@/components/ui/Header";
+import React, { useContext, useMemo, useState } from "react";
+import {
+  SafeAreaView, ScrollView, RefreshControl, View,
+} from "react-native";
+import { useRouter } from "expo-router";
 import Screen from "@/components/ui/Screen";
-import { useAuth } from "@/lib/auth/AuthContext";
-import { useTheme } from "@/lib/ui/ThemeProvider";
-import { Text, View } from "react-native";
+/* import { signOut } from "firebase/auth";
+import { auth } from "../firebase";
+import API from "../config";
+import { ActiveApartmentContext } from "../contex/ActiveApartmentContext";
+import UserOwnedApartmentsGrid from "../UserOwnedApartmentsGrid";
+import MyOpenHouses from "../components/MyOpenHouses";
+import RoommatePreferencesForm from "../components/RoommatePreferencesForm"; */
+import HouseLoading from "@/components/ui/loadingHouseSign";
 
-export default function Profile() {
-  const { logout, user } = useAuth();
-  const { palette } = useTheme();
+
+import { useUserProfile } from "@/hooks/profileHooks/useUserProfile";
+import { useFriends } from "@/hooks/profileHooks/useFriends";
+import { useOpenHouses } from "@/hooks/profileHooks/useOpenHouses";
+
+import { ProfileHeader } from "@/components/profile/profileHeader";
+import { CountersRow } from "@/components/profile/countersRow";
+import { FriendsModal } from "@/components/profile/friendsModal";
+import { EditProfileModal } from "@/components/profile/editProfileModal";
+import { InfoCard } from "@/components/profile/infoCard";
+import { AIButton } from "@/components/profile/AIButton";
+
+import { useApartments, type Apartment } from "@/context/ApartmentsContext";
+
+
+type MyProfileProps = { myId: number | string };
+
+const MyProfile: React.FC<MyProfileProps> = ({ myId }) => {
+  const router = useRouter();
+  
+  const API = "";
+  const {home} = useApartments();
+  const  allApartments  = home.ids ;
+
+  // data hooks
+  const { profile, loading, error, reload, updateProfile } = useUserProfile(API, 1, { mock: true });  
+  const { friends, reload: reloadFriends } = useFriends(String(API), myId);
+  const { openHouses, reload: reloadOpenHouses } = useOpenHouses(String(API), myId);
+console.log(profile);
+  // ui state
+  const [refreshing, setRefreshing] = useState(false);
+  const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [showOpenHousesModal, setShowOpenHousesModal] = useState(false);
+  const [showPreferencesForm, setShowPreferencesForm] = useState(false);
+  const [editVisible, setEditVisible] = useState(false);
+
+  const ownedApartmentsNum = useMemo(
+    () => allApartments.filter((a) => a.UserID === Number(myId)).length,
+    [allApartments, myId]
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([reload(), reloadFriends(), reloadOpenHouses()]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.replace("/Login");
+  };
+
+  if (loading) return <HouseLoading text="הפרופיל שלי" />;
+  if (error || !profile) return null;
+
   return (
     <Screen>
-      <Header title="Profile" />
-      <View style={{ gap: 12, marginTop: 8 }}>
-        <Card>
-          <Text style={{ color: palette.text, fontSize: 18, fontFamily: "Inter_600SemiBold", marginBottom: 6 }}>
-            Account
-          </Text>
-          {user ? (
-            <Text style={{ color: palette.textMuted, fontFamily: "Inter_400Regular", marginBottom: 12 }}>
-              Signed in as {user.displayName} ({user.email})
-            </Text>
-          ) : null}
-          <Button title="Sign out" onPress={() => logout()} />
-        </Card>
-      </View>
+      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+        <View style={{ flex: 1, backgroundColor: "#F6F7FB" }}>
+          <ProfileHeader
+            fullName={profile.fullName}
+            email={profile.email}
+            profilePicture={profile.profilePicture}
+            onLogout={handleLogout}
+            onEdit={() => setEditVisible(true)}
+          />
+
+          <CountersRow
+            friendsCount={friends.length}
+            apartmentsCount={ownedApartmentsNum}
+            openHousesCount={openHouses.length}
+            onOpenFriends={() => setShowFriendsModal(true)}
+            onOpenOpenHouses={() => setShowOpenHousesModal(true)}
+          />
+
+          <InfoCard
+            email={profile.email}
+            phoneNumber={profile.phoneNumber}
+            gender={profile.gender}
+            birthDate={profile.birthDate}
+            ownPet={profile.ownPet}
+            smoke={profile.smoke}
+            jobStatus={profile.jobStatus}
+          />
+
+          <AIButton onPress={() => setShowPreferencesForm(true)} />
+
+          {/* Friends */}
+          <FriendsModal
+            visible={showFriendsModal}
+            friends={friends}
+            onClose={() => setShowFriendsModal(false)}
+            onSelect={(friendId) => {
+              setShowFriendsModal(false);
+              router.push({ pathname: "UserProfile", params: { userId: String(friendId) } });
+            }}
+          />
+
+          {/* Open Houses */}
+    {/*       <MyOpenHouses
+            visible={showOpenHousesModal}
+            onClose={() => setShowOpenHousesModal(false)}
+            userId={myId}
+            openHouses={openHouses}
+          />
+ */}
+          {/* Apartments */}
+         {/*  <View style={{ width: "100%", alignItems: "center", marginTop: 30 }}>
+            <UserOwnedApartmentsGrid userId={myId} isMyProfile={true} loginUserId={myId} />
+          </View> */}
+
+          {/* Edit Profile */}
+          <EditProfileModal
+            visible={editVisible}
+            onClose={() => setEditVisible(false)}
+            API={String(API)}
+            profile={profile}
+            onSave={async (updated) => {
+              const saved = await updateProfile(updated);
+              setProfile(saved);
+            }}
+          />
+
+          {/* Preferences form */}
+      {/*     {showPreferencesForm && (
+            <MyModal visible onClose={() => setShowPreferencesForm(false)}>
+              <RoommatePreferencesForm onClose={() => setShowPreferencesForm(false)} />
+            </MyModal>
+          )} */}
+        </View>
+      </ScrollView>
     </Screen>
   );
-}
+};
+
+export default MyProfile;
+
+// מעטפת Modal דקה כדי לא לשנות את RoommatePreferencesForm
+const MyModal: React.FC<{ visible: boolean; onClose(): void; children: React.ReactNode }> = ({
+  visible,
+  onClose,
+  children,
+}) => {
+  const { Modal, View } = require("react-native");
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <View style={{ flex: 1 }}>{children}</View>
+    </Modal>
+  );
+};

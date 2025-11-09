@@ -71,11 +71,11 @@ const getBorderColor = (type: number): string => {
 const getTypeName = (type: number): string => {
   switch (type) {
     case 0:
-      return "Rental";
+      return "השכרה";
     case 1:
-      return "Roommates";
+      return "דירת שותפים";
     case 2:
-      return "Sublet";
+      return "סבלט";
     default:
       return "Unknown";
   }

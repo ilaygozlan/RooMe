@@ -1,4 +1,3 @@
-// app/(tabs)/Map.tsx
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
