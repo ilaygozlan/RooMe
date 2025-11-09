@@ -1,4 +1,3 @@
-// components/navigation/FloatingCenterFabTabBar.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
   LayoutChangeEvent,
