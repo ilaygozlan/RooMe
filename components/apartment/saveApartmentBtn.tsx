@@ -22,7 +22,7 @@ type Props = {
 const ORANGE = "#E3965A";
 const GRAY = "gray";
 const INK = "#4c4f52ff";
-const SIZE = 24;
+const SIZE = 23;
 
 // בדיקות ללא API
 const mockMode = true;
