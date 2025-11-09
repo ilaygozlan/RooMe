@@ -7,4 +7,5 @@ export { default as TypeSpecificFields } from "./typeSpecificFields";
 export { default as SectionTitle } from "./ui/sectionTitle";
 export { default as LabeledInput } from "./ui/labeledInput";
 export { default as ToggleChip } from "./ui/toggleChip";
+export { default as ProgressIndicator } from "./ui/progressIndicator";
 export { uploadStyles as uploadFormStyles } from "@/styles/uploadApartmentStyles";

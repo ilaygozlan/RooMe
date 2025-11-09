@@ -19,21 +19,34 @@ export default function CategorySelector({
 }) {
   return (
     <View style={{ width: "100%" }}>
-      <SectionTitle>בחר סוג דירה</SectionTitle>
       <View style={styles.typeRow}>
         {categories.map((cat) => (
           <TouchableOpacity
             key={cat.id}
             onPress={() => setApartmentType(cat.id)}
             style={[styles.typeOption, apartmentType === cat.id && styles.selectedType]}
+            activeOpacity={0.7}
           >
-            <AntDesign
-              name={cat.icon}
-              size={22}
-              color={apartmentType === cat.id ? "#E3965A" : "#888"}
-              style={{ marginBottom: 4 }}
-            />
-            <Text>{cat.name}</Text>
+            <View
+              style={[
+                styles.iconContainer,
+                apartmentType === cat.id && styles.iconContainerActive,
+              ]}
+            >
+              <AntDesign
+                name={cat.icon}
+                size={28}
+                color={apartmentType === cat.id ? "#E3965A" : "#999"}
+              />
+            </View>
+            <Text
+              style={[
+                styles.typeText,
+                apartmentType === cat.id && styles.typeTextActive,
+              ]}
+            >
+              {cat.name}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>

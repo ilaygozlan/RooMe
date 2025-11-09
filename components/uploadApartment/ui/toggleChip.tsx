@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Switch } from "react-native";
+import { Text, TouchableOpacity } from "react-native";
 import { uploadStyles as styles } from "@/styles/uploadApartmentStyles";
 
 type Props = {
@@ -11,10 +11,15 @@ type Props = {
 
 export default function ToggleChip({ label, icon, value, onValueChange }: Props) {
   return (
-    <View style={styles.toggleChip}>
+    <TouchableOpacity
+      style={[styles.toggleChip, value && styles.selectedToggleChip]}
+      onPress={() => onValueChange(!value)}
+      activeOpacity={0.7}
+    >
       {icon}
-      <Text style={{ marginHorizontal: 8 }}>{label}</Text>
-      <Switch value={value} onValueChange={onValueChange} />
-    </View>
+      <Text style={[styles.toggleChipText, value && styles.selectedToggleChipText]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
   );
 }

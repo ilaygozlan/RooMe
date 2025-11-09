@@ -13,6 +13,7 @@ import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 
 // ---- Optional theme palette fallback ----
 type Palette = {
@@ -64,6 +65,7 @@ export default function FloatingCenterFabTabBar({
 }: Props) {
   const palette = { ...defaultPalette, ...(paletteProp || {}) } as Palette;
   const { bottom } = useSafeAreaInsets();
+  const router = useRouter();
 
   // Expect at least 4 routes – take first 2 for left, last 2 for right
   const { leftRoutes, rightRoutes } = useMemo(() => {
@@ -109,8 +111,8 @@ export default function FloatingCenterFabTabBar({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (onCenterPress) return onCenterPress();
     if (centerRouteName) {
-      // navigate to provided route
-      navigation.navigate(centerRouteName as never);
+      // navigate to provided route (use router for routes outside tabs)
+      router.push(`/${centerRouteName}` as any);
     }
   };
 

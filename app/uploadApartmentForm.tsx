@@ -2,17 +2,16 @@ import React, { useContext, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   FlatList,
   TouchableOpacity,
   Alert,
+  ScrollView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import HouseLoading from "@/components/ui/loadingHouseSign";
-/* import { userInfoContext } from "../contex/userInfoContext"; */
-/* import { ActiveApartmentContext } from "../contex/ActiveApartmentContext"; */
-/* import API from "../../config"; */
+import { useRouter } from "expo-router";
 import { GooglePlacesAutocomplete } from "@/components/home/googlePlacesCustomAPI";
 import {
   CategorySelector,
@@ -23,15 +22,24 @@ import {
   TypeSpecificFields,
   SectionTitle,
   LabeledInput,
+  ProgressIndicator,
   uploadFormStyles as styles,
 } from "@/components/uploadApartment/";
 import { normalizeFileForFormData, massageApartmentForList } from "@/utils/uploadHelpers";
 
-export default function UploadApartmentForm() {
-  const { allApartments, setAllApartments } = useContext(ActiveApartmentContext);
-  const { loginUserId } = useContext(userInfoContext);
+const STEP_LABELS = ["סוג דירה", "תמונות", "פרטים"];
 
-  const [step, setStep] = useState<0 | 1>(0);
+export default function UploadApartmentForm() {
+  const router = useRouter();
+  /*   const { allApartments, setAllApartments } = useContext(ActiveApartmentContext);
+  const { loginUserId } = useContext(userInfoContext); */
+
+  //prod
+  const allApartments: any[] = [];
+  const loginUserId = 999;
+  const API = "";
+
+  const [step, setStep] = useState<0 | 1 | 2>(0);
 
   const [apartmentType, setApartmentType] = useState<number | null>(null);
   const [location, setLocation] = useState<any>(null);
@@ -67,11 +75,29 @@ export default function UploadApartmentForm() {
       .catch(() => {});
   }, [loginUserId]);
 
-  const step1Valid = useMemo(() => {
-    return apartmentType !== null && location?.address && price && rooms;
-  }, [apartmentType, location, price, rooms]);
+  // Validation for each step
+  const step0Valid = useMemo(() => {
+    return apartmentType !== null;
+  }, [apartmentType]);
 
-  const allValid = useMemo(() => step1Valid, [step1Valid]);
+  const step1Valid = useMemo(() => {
+    // Images are optional, so step 1 is always valid
+    return true;
+  }, []);
+
+  const step2Valid = useMemo(() => {
+    return location?.address && price && rooms;
+  }, [location, price, rooms]);
+
+  const canProceedToNextStep = useMemo(() => {
+    if (step === 0) return step0Valid;
+    if (step === 1) return step1Valid;
+    return false;
+  }, [step, step0Valid, step1Valid]);
+
+  const canSubmit = useMemo(() => {
+    return step2Valid && apartmentType !== null;
+  }, [step2Valid, apartmentType]);
 
   const clearForm = () => {
     setApartmentType(null);
@@ -96,9 +122,23 @@ export default function UploadApartmentForm() {
     setStep(0);
   };
 
+  const handleNext = () => {
+    if (step < 2 && canProceedToNextStep) {
+      setStep((step + 1) as 0 | 1 | 2);
+    }
+  };
+
+  const handleBack = () => {
+    if (step > 0) {
+      setStep((step - 1) as 0 | 1 | 2);
+    } else {
+      router.back();
+    }
+  };
+
   const handleSubmit = async () => {
-    if (!allValid) {
-      Alert.alert("שגיאה", "אנא מלא את כל השדות המסומנים בשלב הראשון");
+    if (!canSubmit) {
+      Alert.alert("שגיאה", "אנא מלא את כל השדות הנדרשים");
       return;
     }
     setIsUploading(true);
@@ -156,8 +196,15 @@ export default function UploadApartmentForm() {
       if (!images.length) {
         const displayApt = massageApartmentForList(apartmentData, newApartmentId, loginUserId, userProfile, false);
         setAllApartments([...allApartments, displayApt]);
-        Alert.alert("הצלחה", "הדירה פורסמה בהצלחה!");
-        clearForm();
+        Alert.alert("הצלחה", "הדירה פורסמה בהצלחה!", [
+          {
+            text: "אישור",
+            onPress: () => {
+              clearForm();
+              router.back();
+            },
+          },
+        ]);
         setIsUploading(false);
         return;
       }
@@ -182,7 +229,15 @@ export default function UploadApartmentForm() {
         console.error("Upload error:", uploadRes.status, errorText);
         const displayApt = massageApartmentForList(apartmentData, newApartmentId, loginUserId, userProfile, false);
         setAllApartments([...allApartments, displayApt]);
-        Alert.alert("שגיאה", "הדירה פורסמה, אך העלאת התמונות נכשלה");
+        Alert.alert("שגיאה", "הדירה פורסמה, אך העלאת התמונות נכשלה", [
+          {
+            text: "אישור",
+            onPress: () => {
+              clearForm();
+              router.back();
+            },
+          },
+        ]);
         setIsUploading(false);
         return;
       }
@@ -192,8 +247,15 @@ export default function UploadApartmentForm() {
       const displayApt = massageApartmentForList(apartmentData, newApartmentId, loginUserId, userProfile, true, imageLinks);
       setAllApartments([...allApartments, displayApt]);
 
-      Alert.alert("הצלחה", "הדירה והתמונות פורסמו בהצלחה!");
-      clearForm();
+      Alert.alert("הצלחה", "הדירה והתמונות פורסמו בהצלחה!", [
+        {
+          text: "אישור",
+          onPress: () => {
+            clearForm();
+            router.back();
+          },
+        },
+      ]);
       setIsUploading(false);
     } catch (e) {
       console.error(e);
@@ -204,126 +266,170 @@ export default function UploadApartmentForm() {
 
   if (isUploading) return <HouseLoading text="מעלה את הדירה והתמונות..." />;
 
-  return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0} style={{ flex: 1 }}>
-        <View style={styles.progressHeader}>
-          <Text style={styles.title}>העלאת דירה</Text>
-          <View style={styles.progressBarOuter}>
-            <View style={[styles.progressBarInner, { width: step === 0 ? "50%" : "100%" }]} />
-          </View>
-          <Text style={styles.progressText}>{step === 0 ? "שלב 1 מתוך 2" : "שלב 2 מתוך 2"}</Text>
-        </View>
-
-        <FlatList
-          data={[0]}
-          keyExtractor={() => "content"}
-          renderItem={() => (
-            <View style={styles.container}>
-              {step === 0 ? (
-                <>
-                  <CategorySelector apartmentType={apartmentType} setApartmentType={setApartmentType} />
-                  <ImagePickerRow images={images} setImages={setImages} />
-
-                  <View style={{ width: "100%", marginTop: 8 }}>
-                    <SectionTitle>מיקום</SectionTitle>
-                    <GooglePlacesAutocomplete
-                      onFail={(error: any) => {
-                        console.error("Autocomplete ERROR:", error);
-                        Alert.alert("שגיאה", "אירעה שגיאה בעת חיפוש הכתובת");
-                      }}
-                      textInputProps={{ autoCorrect: false }}
-                      placeholder={"הקלד מיקום..."}
-                      fetchDetails={true}
-                      onPress={(_data: any, details: any = null) => {
-                        if (!details || !details.geometry?.location) {
-                          Alert.alert("שגיאה", "פרטי מיקום לא זמינים כרגע");
-                          return;
-                        }
-                        const fullAddress = {
-                          address: details.formatted_address || "",
-                          latitude: details.geometry.location.lat,
-                          longitude: details.geometry.location.lng,
-                          types: details.types || [],
-                        };
-                        setLocation(fullAddress);
-                      }}
-                      isRowScrollable={false}
-                      query={{
-                        key: "YOUR_GOOGLE_PLACES_KEY",
-                        language: "he",
-                        components: "country:il",
-                      }}
-                      enablePoweredByContainer={false}
-                      styles={{ textInput: styles.placesInput, listView: styles.placesListView }}
-                    />
-                  </View>
-
-                  <View style={{ width: "100%", marginTop: 8 }}>
-                    <SectionTitle>פרטים בסיסיים</SectionTitle>
-                    <LabeledInput label="מחיר (לחודש)" value={price} onChangeText={setPrice} keyboardType="numeric" placeholder="לדוגמה: 5200" />
-                    <LabeledInput label="חדרים" value={rooms} onChangeText={setRooms} keyboardType="numeric" placeholder="לדוגמה: 3" />
-                    <LabeledInput label="קומה" value={floor} onChangeText={setFloor} keyboardType="numeric" placeholder="לדוגמה: 2" />
-                    <LabeledInput label="חניה" value={parkingSpace} onChangeText={setParkingSpace} keyboardType="numeric" placeholder="מספר מקומות חניה" />
-                    <LabeledInput label="תיאור" value={description} onChangeText={setDescription} placeholder="כתוב תיאור קצר וברור..." />
-                  </View>
-
-                  <PropertyTypeGrid propertyTypeID={propertyTypeID} setPropertyTypeID={setPropertyTypeID} />
-                </>
-              ) : (
-                <>
-                  <DatesRow
-                    entryDate={entryDate}
-                    exitDate={exitDate}
-                    setEntryDate={setEntryDate}
-                    setExitDate={setExitDate}
-                    showEntryPicker={showEntryPicker}
-                    setShowEntryPicker={setShowEntryPicker}
-                    showExitPicker={showExitPicker}
-                    setShowExitPicker={setShowExitPicker}
-                  />
-
-                  <BooleansRow
-                    allowPet={allowPet} setAllowPet={setAllowPet}
-                    allowSmoking={allowSmoking} setAllowSmoking={setAllowSmoking}
-                    gardenBalcony={gardenBalcony} setGardenBalcony={setGardenBalcony}
-                  />
-
-                  <TypeSpecificFields
-                    apartmentType={apartmentType}
-                    contractLength={contractLength} setContractLength={setContractLength}
-                    extensionPossible={extensionPossible} setExtensionPossible={setExtensionPossible}
-                    numberOfRoommates={numberOfRoommates} setNumberOfRoommates={setNumberOfRoommates}
-                    canCancelWithoutPenalty={canCancelWithoutPenalty} setCanCancelWithoutPenalty={setCanCancelWithoutPenalty}
-                    isWholeProperty={isWholeProperty} setIsWholeProperty={setIsWholeProperty}
-                  />
-                </>
-              )}
+  const renderStepContent = () => {
+    switch (step) {
+      case 0:
+        return (
+          <View style={styles.stepContainer}>
+            <View style={styles.stepHeader}>
+              <Text style={styles.stepTitle}>בחר סוג דירה</Text>
+              <Text style={styles.stepDescription}>מה סוג הדירה שברצונך לפרסם?</Text>
             </View>
-          )}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 120 }}
-        />
+            <CategorySelector apartmentType={apartmentType} setApartmentType={setApartmentType} />
+          </View>
+        );
 
+      case 1:
+        return (
+          <View style={styles.stepContainer}>
+            <View style={styles.stepHeader}>
+              <Text style={styles.stepTitle}>הוסף תמונות</Text>
+              <Text style={styles.stepDescription}>תמונות עוזרות למשוך יותר תשומת לב (אופציונלי)</Text>
+            </View>
+            <ImagePickerRow images={images} setImages={setImages} />
+          </View>
+        );
+
+      case 2:
+        return (
+          <ScrollView
+            style={styles.stepContainer}
+            contentContainerStyle={styles.stepContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.stepHeader}>
+              <Text style={styles.stepTitle}>פרטי הדירה</Text>
+              <Text style={styles.stepDescription}>מלא את הפרטים הבסיסיים על הדירה</Text>
+            </View>
+
+            <View style={{ width: "100%", marginTop: 16 }}>
+              <SectionTitle>מיקום</SectionTitle>
+              <GooglePlacesAutocomplete
+                onFail={(error: any) => {
+                  console.error("Autocomplete ERROR:", error);
+                  Alert.alert("שגיאה", "אירעה שגיאה בעת חיפוש הכתובת");
+                }}
+                textInputProps={{ autoCorrect: false }}
+                placeholder={"הקלד מיקום..."}
+                fetchDetails={true}
+                onPress={(_data: any, details: any = null) => {
+                  if (!details || !details.geometry?.location) {
+                    Alert.alert("שגיאה", "פרטי מיקום לא זמינים כרגע");
+                    return;
+                  }
+                  const fullAddress = {
+                    address: details.formatted_address || "",
+                    latitude: details.geometry.location.lat,
+                    longitude: details.geometry.location.lng,
+                    types: details.types || [],
+                  };
+                  setLocation(fullAddress);
+                }}
+                isRowScrollable={false}
+                query={{
+                  key: "YOUR_GOOGLE_PLACES_KEY",
+                  language: "he",
+                  components: "country:il",
+                }}
+                enablePoweredByContainer={false}
+                styles={{ textInput: styles.placesInput, listView: styles.placesListView }}
+              />
+            </View>
+
+            <View style={{ width: "100%", marginTop: 24 }}>
+              <SectionTitle>פרטים בסיסיים</SectionTitle>
+              <LabeledInput label="מחיר (לחודש) *" value={price} onChangeText={setPrice} keyboardType="numeric" placeholder="לדוגמה: 5200" />
+              <LabeledInput label="חדרים *" value={rooms} onChangeText={setRooms} keyboardType="numeric" placeholder="לדוגמה: 3" />
+              <LabeledInput label="קומה" value={floor} onChangeText={setFloor} keyboardType="numeric" placeholder="לדוגמה: 2" />
+              <LabeledInput label="חניה" value={parkingSpace} onChangeText={setParkingSpace} keyboardType="numeric" placeholder="מספר מקומות חניה" />
+              <LabeledInput label="תיאור" value={description} onChangeText={setDescription} placeholder="כתוב תיאור קצר וברור..." multiline numberOfLines={4} />
+            </View>
+
+            <PropertyTypeGrid propertyTypeID={propertyTypeID} setPropertyTypeID={setPropertyTypeID} />
+
+            <DatesRow
+              entryDate={entryDate}
+              exitDate={exitDate}
+              setEntryDate={setEntryDate}
+              setExitDate={setExitDate}
+              showEntryPicker={showEntryPicker}
+              setShowEntryPicker={setShowEntryPicker}
+              showExitPicker={showExitPicker}
+              setShowExitPicker={setShowExitPicker}
+            />
+
+            <BooleansRow
+              allowPet={allowPet}
+              setAllowPet={setAllowPet}
+              allowSmoking={allowSmoking}
+              setAllowSmoking={setAllowSmoking}
+              gardenBalcony={gardenBalcony}
+              setGardenBalcony={setGardenBalcony}
+            />
+
+            <TypeSpecificFields
+              apartmentType={apartmentType}
+              contractLength={contractLength}
+              setContractLength={setContractLength}
+              extensionPossible={extensionPossible}
+              setExtensionPossible={setExtensionPossible}
+              numberOfRoommates={numberOfRoommates}
+              setNumberOfRoommates={setNumberOfRoommates}
+              canCancelWithoutPenalty={canCancelWithoutPenalty}
+              setCanCancelWithoutPenalty={setCanCancelWithoutPenalty}
+              isWholeProperty={isWholeProperty}
+              setIsWholeProperty={setIsWholeProperty}
+            />
+          </ScrollView>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top"]}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0} style={{ flex: 1 }}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>העלאת דירה</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        {/* Content */}
+        <View style={{ flex: 1 }}>{renderStepContent()}</View>
+
+        {/* Bottom Navigation Bar */}
         <View style={styles.bottomBar}>
-          {step === 1 ? (
-            <>
-              <TouchableOpacity style={styles.secondaryBtn} onPress={() => setStep(0)}>
-                <Text style={styles.secondaryBtnText}>חזרה</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.primaryBtn, { opacity: allValid ? 1 : 0.5 }]} onPress={handleSubmit} disabled={!allValid}>
-                <Text style={styles.primaryBtnText}>שיתוף הדירה</Text>
-              </TouchableOpacity>
-            </>
+          {step > 0 && (
+            <TouchableOpacity style={styles.secondaryBtn} onPress={handleBack}>
+              <Text style={styles.secondaryBtnText}>חזרה</Text>
+            </TouchableOpacity>
+          )}
+          {step < 2 ? (
+            <TouchableOpacity
+              style={[styles.primaryBtn, { opacity: canProceedToNextStep ? 1 : 0.5, flex: step === 0 ? 1 : undefined }]}
+              onPress={handleNext}
+              disabled={!canProceedToNextStep}
+            >
+              <Text style={styles.primaryBtnText}>המשך</Text>
+            </TouchableOpacity>
           ) : (
-            <>
-              <View style={{ flex: 1 }} />
-              <TouchableOpacity style={[styles.primaryBtn, { opacity: step1Valid ? 1 : 0.5 }]} onPress={() => setStep(1)} disabled={!step1Valid}>
-                <Text style={styles.primaryBtnText}>המשך</Text>
-              </TouchableOpacity>
-            </>
+            <TouchableOpacity style={[styles.primaryBtn, { opacity: canSubmit ? 1 : 0.5 }]} onPress={handleSubmit} disabled={!canSubmit}>
+              <Text style={styles.primaryBtnText}>פרסם דירה</Text>
+            </TouchableOpacity>
           )}
         </View>
+
+        {/* Progress Indicator at Bottom */}
+        <SafeAreaView edges={["bottom"]} style={{ backgroundColor: "#fff" }}>
+          <ProgressIndicator currentStep={step} totalSteps={3} stepLabels={STEP_LABELS} />
+        </SafeAreaView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

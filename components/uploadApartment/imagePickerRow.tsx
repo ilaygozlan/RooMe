@@ -39,35 +39,40 @@ export default function ImagePickerRow({
 
   return (
     <View style={{ width: "100%" }}>
-      <SectionTitle>תמונות</SectionTitle>
-      <TouchableOpacity onPress={pickImage} style={styles.imageBox}>
-        {images.length === 0 ? (
-          <>
-            <Ionicons name="image-outline" size={56} color="gray" />
-            <Text>הוסף תמונות מהגלריה</Text>
-          </>
-        ) : (
-          <FlatList
-            data={images}
-            horizontal
-            keyExtractor={(item, index) => `${item}-${index}`}
-            renderItem={({ item }) => (
-              <View style={{ position: "relative", marginRight: 8 }}>
-                <Image source={{ uri: item }} style={styles.previewImage} />
-                <TouchableOpacity onPress={() => removeImage(item)} style={styles.removeButton}>
-                  <Text style={{ color: "white" }}>✕</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-            showsHorizontalScrollIndicator={false}
-          />
-        )}
-      </TouchableOpacity>
+      {images.length === 0 ? (
+        <View style={styles.imageBox}>
+          <Ionicons name="images-outline" size={64} color="#ccc" />
+          <Text style={{ marginTop: 12, fontSize: 16, color: "#666", marginBottom: 8 }}>אין תמונות</Text>
+          <Text style={{ fontSize: 14, color: "#999", textAlign: "center" }}>הוסף תמונות כדי למשוך יותר תשומת לב</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={images}
+          horizontal
+          keyExtractor={(item, index) => `${item}-${index}`}
+          renderItem={({ item }) => (
+            <View style={{ position: "relative", marginRight: 12, marginBottom: 12 }}>
+              <Image source={{ uri: item }} style={styles.previewImage} />
+              <TouchableOpacity onPress={() => removeImage(item)} style={styles.removeButton}>
+                <Ionicons name="close" size={16} color="white" />
+              </TouchableOpacity>
+            </View>
+          )}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingVertical: 8 }}
+        />
+      )}
 
-      <TouchableOpacity onPress={takePhoto} style={styles.cameraButton}>
-        <Ionicons name="camera-outline" size={20} color="#333" />
-        <Text style={{ marginLeft: 8 }}>צלם תמונה</Text>
-      </TouchableOpacity>
+      <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+        <TouchableOpacity onPress={pickImage} style={styles.actionButton}>
+          <Ionicons name="image-outline" size={22} color="#E3965A" />
+          <Text style={styles.actionButtonText}>גלריה</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={takePhoto} style={styles.actionButton}>
+          <Ionicons name="camera-outline" size={22} color="#E3965A" />
+          <Text style={styles.actionButtonText}>מצלמה</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
