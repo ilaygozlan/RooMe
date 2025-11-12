@@ -107,7 +107,7 @@ export default function BoostButton(props: Props) {
           }),
         ]),
         Animated.timing(flyY, {
-          toValue: -350, // ↑ אפשר להגדיל לשיגור גבוה יותר
+          toValue: -450, // ↑ אפשר להגדיל לשיגור גבוה יותר
           duration: 500,
           easing: Easing.in(Easing.quad),
           useNativeDriver: true,

@@ -9,11 +9,13 @@ import {
   Dimensions,
   Animated,
   FlatList,
+  Platform,
 } from "react-native";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import  Screen  from "@/components/Screen";
 import ExtraDetails from "@/components/apartment/extraApartmentDetails";
 import ApartmentGallery from "@/components/apartment/apartmentGallery";
 import API from "../config";
@@ -68,6 +70,7 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
   const scrollX = useRef(new Animated.Value(0)).current;
   const carouselRef = useRef<ScrollView | null>(null);
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
 
   const [activeSlide, setActiveSlide] = useState<number>(0);
   const [userInfo, setUserInfo] = useState<any>(null);
@@ -180,18 +183,18 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
   })();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F5F7FA" }}>
+    <View>
       <FlatList
         data={[]}
         renderItem={() => null}
         ListHeaderComponent={
           <View
-            style={styles.screen}
+            style={[styles.screen, { paddingTop: Math.max(insets.top, 8) }]}
             onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
           >
             {/* Header */}
             <View style={styles.headerRow}>
-              <TouchableOpacity onPress={onClose} style={styles.iconBtn}>
+              <TouchableOpacity onPress={onClose} style={styles.iconBtn} activeOpacity={0.7}>
                 <Ionicons name="arrow-back" size={22} color="#0F172A" />
               </TouchableOpacity>
 
@@ -324,7 +327,7 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
           </View>
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -368,7 +371,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingTop: 8,
     backgroundColor: "#F5F7FA",
   },
 
