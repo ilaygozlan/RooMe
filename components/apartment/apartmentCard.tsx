@@ -1,7 +1,7 @@
 // components/apartment/apartmentCard.tsx
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React from "react";
 import {
   Dimensions,
   Image,
@@ -13,12 +13,13 @@ import {
   View,
 } from "react-native";
 
-import ApartmentGallery from "@/components/apartment/apartmentGallery";
+import PhotoCollage from "@/components/apartment/PhotoCollage";
 import BoostButton from "@/components/apartment/boostBtn";
 import OpenHouseButton from "@/components/apartment/openHouseButton";
 import SaveButton from "@/components/apartment/saveApartmentBtn";
 
 import { type Apartment } from "@/context/ApartmentsContext";
+import { ENV } from "@/src/config/env";
 
 // ===== Types =====
 type ApartmentCardProps = {
@@ -81,6 +82,40 @@ const getTypeName = (type: number): string => {
   }
 };
 
+/**
+ * Normalize images prop to PhotoCollage format
+ * Handles CSV strings, arrays, and converts relative URLs to absolute
+ */
+const normalizeImages = (
+  images?: string[] | string
+): Array<{ uri: string; id?: string }> => {
+  if (!images) return [];
+
+  const baseUrl = ENV.apiBaseUrl;
+  const asArray: string[] =
+    typeof images === "string"
+      ? images.split(",").map((s) => s.trim()).filter(Boolean)
+      : Array.isArray(images)
+      ? images
+      : [];
+
+  return asArray
+    .map((img, index) => {
+      const trimmed = (img ?? "").trim();
+      if (!trimmed) return null;
+
+      // If already absolute https URL
+      if (trimmed.startsWith("https")) {
+        return { uri: trimmed, id: String(index) };
+      }
+
+      // Convert relative URL to absolute
+      const needsSlash = trimmed.startsWith("/") ? "" : "/";
+      return { uri: `${baseUrl}${needsSlash}${trimmed}`, id: String(index) };
+    })
+    .filter((img): img is { uri: string; id?: string } => img !== null);
+};
+
 // ===== Component =====
 export default function ApartmentCard({
   apartment: apt,
@@ -89,7 +124,6 @@ export default function ApartmentCard({
   onShare,
 }: ApartmentCardProps) {
   const router = useRouter();
-  const [width, setWidth] = useState(0);
 
   const handleShareApartment = async (apt: Apartment): Promise<void> => {
     if (onShare) {
@@ -148,11 +182,8 @@ export default function ApartmentCard({
         </View>
       </TouchableOpacity>
 
-      <View
-        style={styles.cardContent}
-        onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
-      >
-        <ApartmentGallery images={apt.Images} width={width} />
+      <View style={styles.cardContent}>
+        <PhotoCollage images={normalizeImages(apt.Images)} />
 
         <TouchableOpacity onPress={handleCardPress}>
           <View style={styles.details}>
