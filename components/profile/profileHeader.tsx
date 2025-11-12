@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, Image, StyleSheet, Platform } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 type Props = {
   fullName: string;
@@ -18,72 +19,186 @@ export const ProfileHeader: React.FC<Props> = ({
   onEdit,
 }) => {
   return (
-    <View style={styles.headerContainer}>
-      <TouchableOpacity style={styles.logoutIcon} onPress={onLogout}>
-        <Feather name="log-out" size={24} color="#A1A7B3" />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.avatarWrapper} onPress={onEdit}>
-        <Image
-          source={
-            profilePicture
-              ? { uri: profilePicture }
-              : { uri: "https://www.w3schools.com/howto/img_avatar.png" }
-          }
-          style={styles.avatar}
-        />
-        <View style={styles.editIconCircle}>
-          <Feather name="edit" size={16} color="#fff" />
+    <LinearGradient
+      colors={["#E3965A", "#F4B982", "#F0C27B"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.gradientContainer}
+    >
+      <View style={styles.headerContainer}>
+        <TouchableOpacity 
+          style={styles.logoutButton} 
+          onPress={onLogout}
+          activeOpacity={0.7}
+        >
+          <View style={styles.logoutIconContainer}>
+            <Feather name="log-out" size={20} color="#fff" />
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.avatarWrapper} 
+          onPress={onEdit}
+          activeOpacity={0.8}
+        >
+          <View style={styles.avatarContainer}>
+            <Image
+              source={
+                profilePicture
+                  ? { uri: profilePicture }
+                  : { uri: "https://www.w3schools.com/howto/img_avatar.png" }
+              }
+              style={styles.avatar}
+            />
+            <View style={styles.avatarOverlay} />
+          </View>
+          <View style={styles.editIconCircle}>
+            <Feather name="edit-2" size={14} color="#fff" />
+          </View>
+        </TouchableOpacity>
+
+        <View style={styles.textContainer}>
+          <Text style={styles.profileName}>{fullName}</Text>
+          <View style={styles.emailContainer}>
+            <Feather name="mail" size={14} color="rgba(255,255,255,0.9)" />
+            <Text style={styles.profileEmail}>{email}</Text>
+          </View>
         </View>
-      </TouchableOpacity>
-      <Text style={styles.profileName}>{fullName}</Text>
-      <Text style={styles.profileEmail}>{email}</Text>
-    </View>
+      </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
+  gradientContainer: {
+    paddingTop: Platform.OS === "ios" ? 50 : 40,
+    paddingBottom: 32,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#E3965A",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
   headerContainer: {
     alignItems: "center",
-    paddingTop: 40,
-    paddingBottom: 16,
-    backgroundColor: "#F6F7FB",
+    position: "relative",
+    paddingHorizontal: 20,
+  },
+  logoutButton: {
+    position: "absolute",
+    top: 0,
+    right: 20,
+    zIndex: 10,
+  },
+  logoutIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 255, 255, 0.3)",
+  },
+  avatarWrapper: {
+    marginTop: 8,
+    marginBottom: 16,
     position: "relative",
   },
-  logoutIcon: { position: "absolute", top: 40, right: 24, zIndex: 10 },
-  avatarWrapper: {
-    marginBottom: 12,
-    backgroundColor: "#fff",
+  avatarContainer: {
+    width: 120,
+    height: 120,
     borderRadius: 60,
-    padding: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: "#fff",
+    padding: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
-  avatar: { width: 100, height: 100, borderRadius: 50 },
+  avatar: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 56,
+  },
+  avatarOverlay: {
+    position: "absolute",
+    top: 4,
+    left: 4,
+    right: 4,
+    bottom: 4,
+    borderRadius: 56,
+    borderWidth: 3,
+    borderColor: "rgba(255, 255, 255, 0.5)",
+  },
   editIconCircle: {
     position: "absolute",
-    bottom: 0,
-    right: 0,
+    bottom: 4,
+    right: 4,
     backgroundColor: "#E3965A",
-    borderRadius: 12,
-    padding: 4,
-    borderWidth: 2,
+    borderRadius: 18,
+    width: 36,
+    height: 36,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 3,
     borderColor: "#fff",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  textContainer: {
+    alignItems: "center",
+    marginTop: 4,
   },
   profileName: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#222B45",
-    marginTop: 8,
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#fff",
     textAlign: "center",
+    marginBottom: 8,
+    textShadowColor: "rgba(0, 0, 0, 0.1)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  emailContainer: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.3)",
   },
   profileEmail: {
-    fontSize: 15,
-    color: "#A1A7B3",
-    marginTop: 2,
-    marginBottom: 10,
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.95)",
     textAlign: "center",
+    fontWeight: "500",
   },
 });

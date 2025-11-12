@@ -73,8 +73,12 @@ console.log(profile);
 
   return (
     <Screen>
-      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-        <View style={{ flex: 1, backgroundColor: "#F6F7FB" }}>
+      <ScrollView 
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 32 }}
+      >
+        <View style={{ flex: 1, backgroundColor: "#F8F9FA" }}>
           <ProfileHeader
             fullName={profile.fullName}
             email={profile.email}
@@ -83,25 +87,31 @@ console.log(profile);
             onEdit={() => setEditVisible(true)}
           />
 
-          <CountersRow
-            friendsCount={friends.length}
-            apartmentsCount={ownedApartmentsNum}
-            openHousesCount={openHouses.length}
-            onOpenFriends={() => setShowFriendsModal(true)}
-            onOpenOpenHouses={() => setShowOpenHousesModal(true)}
-          />
+          <View style={{ marginTop: 24, marginHorizontal: 20 }}>
+            <CountersRow
+              friendsCount={friends.length}
+              apartmentsCount={ownedApartmentsNum}
+              openHousesCount={openHouses.length}
+              onOpenFriends={() => setShowFriendsModal(true)}
+              onOpenOpenHouses={() => setShowOpenHousesModal(true)}
+            />
+          </View>
 
-          <InfoCard
-            email={profile.email}
-            phoneNumber={profile.phoneNumber}
-            gender={profile.gender}
-            birthDate={profile.birthDate}
-            ownPet={profile.ownPet}
-            smoke={profile.smoke}
-            jobStatus={profile.jobStatus}
-          />
+          <View style={{ marginTop: 24, marginHorizontal: 20 }}>
+            <InfoCard
+              email={profile.email}
+              phoneNumber={profile.phoneNumber}
+              gender={profile.gender}
+              birthDate={profile.birthDate}
+              ownPet={profile.ownPet}
+              smoke={profile.smoke}
+              jobStatus={profile.jobStatus}
+            />
+          </View>
 
-          <AIButton onPress={() => setShowPreferencesForm(true)} />
+          <View style={{ marginTop: 24, marginHorizontal: 20 }}>
+            <AIButton onPress={() => setShowPreferencesForm(true)} />
+          </View>
 
           {/* Friends */}
           <FriendsModal

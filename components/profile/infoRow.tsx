@@ -8,10 +8,14 @@ export const InfoRow: React.FC<{
 }> = ({ icon, label, value }) => (
   <View style={styles.infoRow}>
     <View style={styles.infoLabelContainer}>
-      {icon}
+      <View style={styles.iconWrapper}>
+        {icon}
+      </View>
       <Text style={styles.infoLabel}>{label}</Text>
     </View>
-    <Text style={styles.infoValue}>{value ?? ""}</Text>
+    <Text style={styles.infoValue} numberOfLines={1} ellipsizeMode="tail">
+      {value ?? "—"}
+    </Text>
   </View>
 );
 
@@ -20,26 +24,39 @@ const styles = StyleSheet.create({
     flexDirection: "row-reverse",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 14,
-    paddingBottom: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    borderRadius: 12,
+    backgroundColor: "#F8F9FA",
+    marginBottom: 8,
   },
   infoLabelContainer: {
     flexDirection: "row-reverse",
     alignItems: "center",
-    gap: 8,
-    minWidth: 110,
+    gap: 10,
+    flex: 1,
+  },
+  iconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
   infoLabel: {
-    fontSize: 15,
-    color: "#7C83FD",
+    fontSize: 14,
+    color: "#475569",
     fontWeight: "600",
-    marginRight: 8,
   },
   infoValue: {
-    fontSize: 15,
-    color: "#A1A7B3",
+    fontSize: 14,
+    color: "#0F172A",
     fontWeight: "500",
     textAlign: "left",
     flex: 1,
+    marginLeft: 12,
   },
 });
