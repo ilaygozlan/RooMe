@@ -27,7 +27,7 @@ type Palette = {
 };
 const defaultPalette: Palette = {
   text: "#111",
-  textMuted: "#8A8A8A",
+  textMuted: "#f3f2f2ff",
   border: "rgba(0,0,0,0.08)",
   card: "rgba(255,255,255,0.92)",
   navbarBG: "rgba(227,150,90,0.15)", // indicator bg

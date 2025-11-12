@@ -183,7 +183,10 @@ export default function ApartmentCard({
       </TouchableOpacity>
 
       <View style={styles.cardContent}>
-        <PhotoCollage images={normalizeImages(apt.Images)} />
+        <PhotoCollage 
+          images={normalizeImages(apt.Images)} 
+          onImagePress={handleCardPress}
+        />
 
         <TouchableOpacity onPress={handleCardPress}>
           <View style={styles.details}>

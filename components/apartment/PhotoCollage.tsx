@@ -1,16 +1,13 @@
-import React, { useState, useCallback, useMemo } from "react";
-import {
-  View,
-  StyleSheet,
-  Pressable,
-  Dimensions,
-  ActivityIndicator,
-  Text,
-  Platform,
-  BackHandler,
-} from "react-native";
 import { Image } from "expo-image";
-import ImageView from "react-native-image-viewing";
+import React, { useCallback, useMemo, useState } from "react";
+import {
+    ActivityIndicator,
+    Dimensions,
+    Pressable,
+    StyleSheet,
+    Text,
+    View
+} from "react-native";
 
 // ===== Types =====
 
@@ -23,8 +20,8 @@ export type PhotoCollageProps = {
   borderRadius?: number;
   /** Gap between tiles in pixels. Default: 6 */
   gap?: number;
-  /** Optional callback when viewer opens */
-  onOpenViewer?: (index: number) => void;
+  /** Callback when any image is pressed */
+  onImagePress?: () => void;
 };
 
 type ImageTile = {
@@ -186,80 +183,20 @@ function computeLayout(
   return { tiles, containerHeight };
 }
 
-// ===== Image Viewer Modal Component =====
-
-type ImageViewerModalProps = {
-  images: Array<{ uri: string; id?: string }>;
-  visible: boolean;
-  initialIndex: number;
-  onClose: () => void;
-};
-
-function ImageViewerModal({
-  images,
-  visible,
-  initialIndex,
-  onClose,
-}: ImageViewerModalProps) {
-  const [currentIndex, setCurrentIndex] = useState(initialIndex);
-
-  // Handle Android back button
-  React.useEffect(() => {
-    if (!visible) return;
-
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      () => {
-        onClose();
-        return true;
-      }
-    );
-
-    return () => backHandler.remove();
-  }, [visible, onClose]);
-
-  // Convert images to format expected by react-native-image-viewing
-  const imageViewingImages = useMemo(
-    () => images.map((img) => ({ uri: img.uri })),
-    [images]
-  );
-
-  return (
-    <ImageView
-      images={imageViewingImages}
-      imageIndex={currentIndex}
-      visible={visible}
-      onRequestClose={onClose}
-      onImageIndexChange={setCurrentIndex}
-      swipeToCloseEnabled={true}
-      doubleTapToZoomEnabled={true}
-      FooterComponent={({ imageIndex }) => (
-        <View style={styles.viewerFooter}>
-          <Text style={styles.viewerFooterText}>
-            {imageIndex + 1} / {images.length}
-          </Text>
-        </View>
-      )}
-    />
-  );
-}
-
 // ===== Main Component =====
 
 /**
- * Facebook-style photo collage component with full-screen image viewer
- * Supports 1-5+ images with intelligent layout and modal viewer
+ * Facebook-style photo collage component
+ * Supports 1-5+ images with intelligent layout
  */
 export default function PhotoCollage({
   images,
   aspectRatio = 1.2,
   borderRadius = 16,
   gap = 6,
-  onOpenViewer,
+  onImagePress,
 }: PhotoCollageProps) {
   const [containerWidth, setContainerWidth] = useState(0);
-  const [viewerVisible, setViewerVisible] = useState(false);
-  const [viewerIndex, setViewerIndex] = useState(0);
   const [imageLoadStates, setImageLoadStates] = useState<Record<number, boolean>>({});
 
   // Validate images prop
@@ -280,22 +217,15 @@ export default function PhotoCollage({
     return computeLayout(containerWidth, displayCount, aspectRatio, gap);
   }, [containerWidth, displayCount, aspectRatio, gap]);
 
-  // Handle tile press - open viewer at correct index
-  const handleTilePress = useCallback(
-    (index: number) => {
-      setViewerIndex(index);
-      setViewerVisible(true);
-      onOpenViewer?.(index);
-    },
-    [onOpenViewer]
-  );
+  // Handle tile press - trigger callback to open apartment details
+  const handleTilePress = useCallback(() => {
+    onImagePress?.();
+  }, [onImagePress]);
 
-  // Handle overlay press (5th+ images)
+  // Handle overlay press (5th+ images) - same behavior
   const handleOverlayPress = useCallback(() => {
-    setViewerIndex(4); // Start at index 4 (5th image)
-    setViewerVisible(true);
-    onOpenViewer?.(4);
-  }, [onOpenViewer]);
+    onImagePress?.();
+  }, [onImagePress]);
 
   // Track image load state
   const handleImageLoad = useCallback((index: number) => {
@@ -322,7 +252,7 @@ export default function PhotoCollage({
             borderRadius,
           },
         ]}
-        onPress={() => handleTilePress(imageIndex)}
+        onPress={handleTilePress}
         accessibilityLabel={`Apartment image #${imageIndex + 1}`}
         accessibilityRole="imagebutton"
       >
@@ -383,34 +313,25 @@ export default function PhotoCollage({
   }
 
   return (
-    <>
-      <View
-        style={[
-          styles.container,
-          {
-            height: layout.containerHeight,
-            borderRadius,
-            overflow: "hidden",
-          },
-        ]}
-        onLayout={(e) => {
-          const newWidth = e.nativeEvent.layout.width;
-          if (newWidth > 0 && newWidth !== containerWidth) {
-            setContainerWidth(newWidth);
-          }
-        }}
-      >
-        {layout.tiles.map((tile, idx) => renderTile(tile, tile.index))}
-        {renderOverlay()}
-      </View>
-
-      <ImageViewerModal
-        images={images}
-        visible={viewerVisible}
-        initialIndex={viewerIndex}
-        onClose={() => setViewerVisible(false)}
-      />
-    </>
+    <View
+      style={[
+        styles.container,
+        {
+          height: layout.containerHeight,
+          borderRadius,
+          overflow: "hidden",
+        },
+      ]}
+      onLayout={(e) => {
+        const newWidth = e.nativeEvent.layout.width;
+        if (newWidth > 0 && newWidth !== containerWidth) {
+          setContainerWidth(newWidth);
+        }
+      }}
+    >
+      {layout.tiles.map((tile, idx) => renderTile(tile, tile.index))}
+      {renderOverlay()}
+    </View>
   );
 }
 
@@ -454,21 +375,6 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0, 0, 0, 0.3)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
-  },
-  viewerFooter: {
-    alignItems: "center",
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-  },
-  viewerFooterText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "600",
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    overflow: "hidden",
   },
 });
 
