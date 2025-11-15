@@ -100,82 +100,39 @@ function computeLayout(
       break;
     }
 
-    case 3: {
-      // Three images: left = large, right = two stacked
-      const leftWidth = (containerWidth - gap) / 2;
-      const rightWidth = containerWidth - leftWidth - gap;
-      const rightTileHeight = (containerHeight - gap) / 2;
-
-      tiles.push(
-        {
-          uri: "",
-          width: leftWidth,
-          height: containerHeight,
-          left: 0,
-          top: 0,
-          index: 0,
-        },
-        {
-          uri: "",
-          width: rightWidth,
-          height: rightTileHeight,
-          left: leftWidth + gap,
-          top: 0,
-          index: 1,
-        },
-        {
-          uri: "",
-          width: rightWidth,
-          height: rightTileHeight,
-          left: leftWidth + gap,
-          top: rightTileHeight + gap,
-          index: 2,
-        }
-      );
-      break;
-    }
-
+    case 3:
     case 4:
     default: {
-      // Four images: 2x2 grid
-      // For 5+ images, show first 4, then overlay on 4th tile
-      const tileWidth = (containerWidth - gap) / 2;
-      const tileHeight = (containerHeight - gap) / 2;
+      // 3+ images: first photo large on left, rest stacked on right
+      // For 5+ images, show first 4, then overlay on last tile
+      const leftWidth = containerWidth * 0.6; // 60% width for large photo
+      const rightWidth = containerWidth - leftWidth - gap; // Remaining width for right column
+      
+      // Calculate how many photos to show on the right
+      const rightPhotoCount = Math.min(imageCount - 1, 3); // Max 3 photos on right (for 4 total)
+      const rightTileHeight = (containerHeight - (rightPhotoCount - 1) * gap) / rightPhotoCount;
 
-      tiles.push(
-        {
+      // Large photo on the left
+      tiles.push({
+        uri: "",
+        width: leftWidth,
+        height: containerHeight,
+        left: 0,
+        top: 0,
+        index: 0,
+      });
+
+      // Smaller photos stacked on the right
+      for (let i = 0; i < rightPhotoCount; i++) {
+        tiles.push({
           uri: "",
-          width: tileWidth,
-          height: tileHeight,
-          left: 0,
-          top: 0,
-          index: 0,
-        },
-        {
-          uri: "",
-          width: tileWidth,
-          height: tileHeight,
-          left: tileWidth + gap,
-          top: 0,
-          index: 1,
-        },
-        {
-          uri: "",
-          width: tileWidth,
-          height: tileHeight,
-          left: 0,
-          top: tileHeight + gap,
-          index: 2,
-        },
-        {
-          uri: "",
-          width: tileWidth,
-          height: tileHeight,
-          left: tileWidth + gap,
-          top: tileHeight + gap,
-          index: 3,
-        }
-      );
+          width: rightWidth,
+          height: rightTileHeight,
+          left: leftWidth + gap,
+          top: i * (rightTileHeight + gap),
+          index: i + 1,
+        });
+      }
       break;
     }
   }
@@ -206,7 +163,9 @@ export default function PhotoCollage({
   }
 
   // Compute layout based on container width
-  const displayCount = Math.min(images.length, 4);
+  // For 3+ images: show first photo large, then up to 3 more on the right
+  const maxDisplayCount = images.length >= 3 ? Math.min(images.length, 4) : images.length;
+  const displayCount = maxDisplayCount;
   const hasOverlay = images.length > 4;
   const remainingCount = images.length - 4;
 

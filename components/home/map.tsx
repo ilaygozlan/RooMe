@@ -332,10 +332,10 @@ const styles = StyleSheet.create({
   modalContent: {
     width: "85%",
     maxHeight: "80%",
-    height: "80%",
+    height: "70%",
     backgroundColor: "#fff",
     borderRadius: 10,
-    padding: 20,
+    padding: 10,
     elevation: 5,
   },
 });
