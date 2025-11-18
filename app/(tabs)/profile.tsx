@@ -9,8 +9,8 @@ import { auth } from "../firebase";
 import API from "../config";
 import { ActiveApartmentContext } from "../contex/ActiveApartmentContext";
 import UserOwnedApartmentsGrid from "../UserOwnedApartmentsGrid";
-import MyOpenHouses from "../components/MyOpenHouses";
-import RoommatePreferencesForm from "../components/RoommatePreferencesForm"; */
+import MyOpenHouses from "../components/MyOpenHouses";*/
+import RoommatePreferencesForm from "@/components/profile/roommatePreferencesForm"; 
 import HouseLoading from "@/components/ui/loadingHouseSign";
 
 
@@ -78,7 +78,7 @@ console.log(profile);
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}
       >
-        <View style={{ flex: 1, backgroundColor: "#F8F9FA" }}>
+        <View style={{ flex: 1, backgroundColor: "#F8F9FA" , paddingBottom: 100}}>
           <ProfileHeader
             fullName={profile.fullName}
             email={profile.email}
@@ -150,11 +150,11 @@ console.log(profile);
           />
 
           {/* Preferences form */}
-      {/*     {showPreferencesForm && (
+          {showPreferencesForm && (
             <MyModal visible onClose={() => setShowPreferencesForm(false)}>
               <RoommatePreferencesForm onClose={() => setShowPreferencesForm(false)} />
             </MyModal>
-          )} */}
+          )} 
         </View>
       </ScrollView>
     </Screen>
