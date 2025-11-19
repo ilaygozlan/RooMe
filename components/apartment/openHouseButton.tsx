@@ -54,6 +54,45 @@ type NormalizedOpenHouse = {
   raw: OpenHouseApiItem;
 };
 
+// -------- Mock Config --------
+
+// Toggle this to false when backend is ready
+const USE_MOCK_OPEN_HOUSES = true;
+
+/** Mock data in the SAME shape the API would return */
+const MOCK_OPEN_HOUSES_API: OpenHouseApiItem[] = [
+  {
+    OpenHouseID: 1,
+    Date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // מחר
+    StartTime: "18:00",
+    EndTime: "19:00",
+    Location: JSON.stringify({ address: "דיזנגוף 100, תל אביב" }),
+    AmountOfPeople: 5,
+    TotalRegistrations: 2,
+    IsRegistered: false,
+  },
+  {
+    OpenHouseID: 2,
+    Date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // עוד 3 ימים
+    StartTime: "20:30",
+    EndTime: "21:15",
+    Location: JSON.stringify({ address: "בן יהודה 50, תל אביב" }),
+    AmountOfPeople: 8,
+    TotalRegistrations: 8, // מלא
+    IsRegistered: false,
+  },
+  {
+    OpenHouseID: 3,
+    Date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // עוד 5 ימים
+    StartTime: "10:00",
+    EndTime: "11:00",
+    Location: "אבן גבירול 120, תל אביב", // כתובת פשוטה
+    AmountOfPeople: 4,
+    TotalRegistrations: 1,
+    IsRegistered: true, // המשתמש "רשום" לסיור הזה
+  },
+];
+
 // -------- Helpers --------
 const parseLocationAddress = (loc?: string): string | undefined => {
   if (!loc) return undefined;
@@ -71,15 +110,10 @@ const parseLocationAddress = (loc?: string): string | undefined => {
 };
 
 const normalizeOpenHouse = (item: OpenHouseApiItem): NormalizedOpenHouse => {
-  const AmountOfPeople =
-    item.AmountOfPeople ??
-    item.amountOfPeoples ??
-    0;
+  const AmountOfPeople = item.AmountOfPeople ?? item.amountOfPeoples ?? 0;
 
   const TotalRegistrations =
-    item.TotalRegistrations ??
-    item.confirmedPeoples ??
-    0;
+    item.TotalRegistrations ?? item.confirmedPeoples ?? 0;
 
   return {
     OpenHouseID: item.OpenHouseID,
@@ -116,6 +150,15 @@ export default function OpenHouseButton({
   const fetchOpenHouses = useCallback(async () => {
     try {
       setLoading(true);
+
+      // ---------- MOCK PATH ----------
+      if (USE_MOCK_OPEN_HOUSES) {
+        const normalized = MOCK_OPEN_HOUSES_API.map(normalizeOpenHouse);
+        setOpenHouses(normalized);
+        return;
+      }
+      // ---------- REAL API PATH (מקורי) ----------
+
       const res = await fetch(
         `${API}OpenHouse/GetOpenHousesByApartment/${apartmentId}/${userId}`
       );
@@ -272,69 +315,179 @@ export default function OpenHouseButton({
     const isFull = item.TotalRegistrations >= item.AmountOfPeople;
     const address = item.LocationAddress ?? location;
 
-    return (
-      <View style={styles.openHouseItem}>
-        <Text style={styles.openHouseText}>
-          {toLocalDateLabel(item.Date)} - {item.StartTime} - {item.EndTime}
-        </Text>
-        <Text style={styles.openHouseLocation}>{address}</Text>
-        <Text style={styles.openHouseLocation}>
-          נרשמו: {item.TotalRegistrations} / {item.AmountOfPeople}
-        </Text>
+    const statusLabel = item.IsRegistered
+      ? "רשום לסיור"
+      : isFull
+      ? "הסיור מלא"
+      : "פנוי";
 
-        {item.IsRegistered ? (
-          <>
-            <Text style={styles.statusConfirmed}>✔ רשום לסיור</Text>
+    const statusStyle = item.IsRegistered
+      ? styles.statusChipRegistered
+      : isFull
+      ? styles.statusChipFull
+      : styles.statusChipAvailable;
+
+    return (
+      <View style={styles.openHouseCard}>
+        {/* Header: date + time + status chip */}
+        <View style={styles.cardHeader}>
+          <View style={styles.dateRow}>
+            <MaterialCommunityIcons
+              name="calendar-clock"
+              size={18}
+              style={styles.rowIcon}
+            />
+            <View style={styles.dateTimeRow}>
+              <Text style={styles.timeText}>
+                {item.StartTime} - {item.EndTime}
+              </Text>
+              <Text style={styles.dateText}>{toLocalDateLabel(item.Date)}</Text>
+            </View>
+          </View>
+
+          <View style={[styles.statusChipBase, statusStyle]}>
+            <Text style={styles.statusChipText}>{statusLabel}</Text>
+          </View>
+        </View>
+
+        {/* Location */}
+        <View style={styles.row}>
+          <MaterialCommunityIcons
+            name="map-marker-outline"
+            size={18}
+            style={styles.rowIcon}
+          />
+          <Text style={styles.locationText} numberOfLines={1}>
+            {address}
+          </Text>
+        </View>
+
+        {/* Capacity */}
+        <View style={styles.row}>
+          <MaterialCommunityIcons
+            name="account-multiple-outline"
+            size={18}
+            style={styles.rowIcon}
+          />
+          <Text style={styles.capacityText}>
+            נרשמו:{" "}
+            <Text style={styles.capacityStrong}>{item.TotalRegistrations}</Text>{" "}
+            / {item.AmountOfPeople}
+          </Text>
+        </View>
+
+        {/* Actions */}
+        <View style={styles.actionsRow}>
+          {item.IsRegistered && (
+            <View style={styles.infoPill}>
+              <Text style={styles.infoPillText}>אתה רשום לסיור הזה</Text>
+              <MaterialCommunityIcons
+                name="check-circle"
+                size={16}
+                style={styles.infoPillIcon}
+              />
+            </View>
+          )}
+
+          {item.IsRegistered ? (
             <TouchableOpacity
-              style={styles.cancelButton}
+              style={styles.secondaryButton}
               onPress={() => cancelRegistration(item.OpenHouseID)}
             >
-              <Text style={styles.cancelText}>בטל רישום</Text>
+              <Text style={styles.secondaryButtonText}>בטל רישום</Text>
             </TouchableOpacity>
-          </>
-        ) : isFull ? (
-          <Text style={styles.fullMessage}>הסיור מלא</Text>
-        ) : (
-          <TouchableOpacity
-            style={styles.registerButton}
-            onPress={() => registerForOpenHouse(item)}
-          >
-            <Text style={styles.registerText}>להרשמה</Text>
-          </TouchableOpacity>
-        )}
+          ) : isFull ? (
+            <View style={styles.disabledButton}>
+              <Text style={styles.disabledButtonText}>הסיור מלא</Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() => registerForOpenHouse(item)}
+            >
+              <Text style={styles.primaryButtonText}>להרשמה</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     );
   };
 
   return (
     <View>
-      <TouchableOpacity onPress={() => setModalVisible(true)}>
-        <MaterialCommunityIcons name="calendar-outline" size={25} color="gray" />
+      {/* Trigger button – RTL pill with icon + label */}
+      <TouchableOpacity
+        onPress={() => setModalVisible(true)}
+        style={styles.triggerButton}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <MaterialCommunityIcons
+          name="calendar-outline"
+          size={18}
+          color="#FF8A3D"
+        />
+        <Text style={styles.triggerButtonText}>סיור בדירה</Text>
       </TouchableOpacity>
 
       <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.modalBackground}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>🏡 סיורים בדירה</Text>
+            {/* Header */}
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleRow}>
+                <MaterialCommunityIcons
+                  name="home-search-outline"
+                  size={22}
+                  color="#111827"
+                />
+                <Text style={styles.modalTitle}>סיורים בדירה</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                style={styles.closeIconButton}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <MaterialCommunityIcons
+                  name="close"
+                  size={20}
+                  color="#6B7280"
+                />
+              </TouchableOpacity>
+            </View>
 
+            {/* Content */}
             {loading ? (
-              <ActivityIndicator size="small" />
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#FF8A3D" />
+                <Text style={styles.loadingText}>טוען סיורים...</Text>
+              </View>
             ) : openHouses.length > 0 ? (
               <FlatList
                 data={openHouses}
                 keyExtractor={(it) => String(it.OpenHouseID)}
                 renderItem={renderItem}
-                contentContainerStyle={{ gap: 8 }}
+                contentContainerStyle={styles.listContent}
               />
             ) : (
-              <Text style={styles.noOpenHouses}>אין סיורים זמינים</Text>
+              <View style={styles.emptyState}>
+                <MaterialCommunityIcons
+                  name="calendar-remove-outline"
+                  size={32}
+                  color="#D1D5DB"
+                />
+                <Text style={styles.emptyTitle}>אין סיורים זמינים</Text>
+                <Text style={styles.emptySubtitle}>
+                  ברגע שבעל הדירה יפתח בית פתוח – תוכל לראות אותו כאן ולהירשם.
+                </Text>
+              </View>
             )}
 
+            {/* Footer action */}
             <TouchableOpacity
-              style={styles.closeButton}
+              style={styles.footerButton}
               onPress={() => setModalVisible(false)}
             >
-              <Text style={styles.closeButtonText}>סגור</Text>
+              <Text style={styles.footerButtonText}>סגור</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -345,87 +498,280 @@ export default function OpenHouseButton({
 
 // === styles ===
 const styles = StyleSheet.create({
+  // ---- Trigger ----
+  triggerButton: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#FFF5EC",
+    borderWidth: 1,
+    borderColor: "#FFD0A3",
+  },
+  triggerButtonText: {
+    marginRight: 6,
+    fontSize: 13,
+    color: "#FF8A3D",
+    fontWeight: "600",
+    textAlign: "right",
+  },
+
+  // ---- Modal ----
   modalBackground: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.1)",
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(15, 23, 42, 0.35)",
   },
   modalContainer: {
-    width: 350,
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 10,
-    elevation: 5,
+    width: "100%",
+    maxHeight: "80%",
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 40,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 12,
+  },
+  modalHeader: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    marginBottom: 8,
+    paddingEnd: 5,
+  },
+  modalTitleRow: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    flex: 1,
+    justifyContent: "flex-start",
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 10,
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    marginRight: 8,
+    textAlign: "right",
   },
-  openHouseItem: {
-    backgroundColor: "#F4B982",
-    padding: 10,
-    borderRadius: 8,
+  closeIconButton: {
+    padding: 6,
+    borderRadius: 999,
   },
-  openHouseText: {
-    fontSize: 16,
-    fontWeight: "bold",
+
+  // ---- List / content ----
+  listContent: {
+    paddingVertical: 8,
+    paddingBottom: 12,
   },
-  openHouseLocation: {
-    fontSize: 14,
-    color: "#555",
-    marginBottom: 5,
-  },
-  registerButton: {
-    backgroundColor: "#E3965A",
-    padding: 8,
-    borderRadius: 5,
+  loadingContainer: {
+    paddingVertical: 24,
     alignItems: "center",
-    marginTop: 5,
+    justifyContent: "center",
   },
-  registerText: {
-    color: "white",
-    fontWeight: "bold",
-  },
-  noOpenHouses: {
+  loadingText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: "#6B7280",
     textAlign: "center",
-    color: "gray",
-    fontSize: 16,
   },
-  closeButton: {
-    backgroundColor: "gray",
-    padding: 10,
-    borderRadius: 5,
+
+  emptyState: {
+    paddingVertical: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyTitle: {
+    marginTop: 8,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+    textAlign: "center",
+  },
+  emptySubtitle: {
+    marginTop: 4,
+    fontSize: 13,
+    color: "#6B7280",
+    textAlign: "center",
+    paddingHorizontal: 24,
+  },
+
+  footerButton: {
+    marginTop: 4,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: "#FFF1E5",
+    alignItems: "center",
+  },
+  footerButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FF8A3D",
+    textAlign: "center",
+  },
+
+  // ---- Card ----
+  openHouseCard: {
+    backgroundColor: "#FFF7F0",
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#FFE1C2",
+  },
+  cardHeader: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  dateRow: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    flex: 1,
+    justifyContent: "flex-start",
+  },
+  rowIcon: {
+    marginLeft: 6,
+    color: "#6B7280",
+  },
+  dateTimeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  dateText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#111827",
+    textAlign: "right",
+    paddingStart: 15,
+  },
+  timeText: {
+    fontSize: 13,
+    color: "#6B7280",
+    textAlign: "right",
+  },
+
+  row: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  locationText: {
+    fontSize: 13,
+    color: "#4B5563",
+    flex: 1,
+    textAlign: "right",
+  },
+  capacityText: {
+    fontSize: 13,
+    color: "#4B5563",
+    textAlign: "right",
+  },
+  capacityStrong: {
+    fontWeight: "600",
+    color: "#111827",
+  },
+
+  // ---- Status chip ----
+  statusChipBase: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  statusChipText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#111827",
+    textAlign: "center",
+  },
+  statusChipRegistered: {
+    backgroundColor: "#DCFCE7",
+  },
+  statusChipFull: {
+    backgroundColor: "#FEE2E2",
+  },
+  statusChipAvailable: {
+    backgroundColor: "#FFEDE0",
+  },
+
+  // ---- Actions ----
+  actionsRow: {
+    flexDirection: "row-reverse",
     alignItems: "center",
     marginTop: 10,
+    justifyContent: "space-between",
   },
-  closeButtonText: {
-    color: "white",
-    fontWeight: "bold",
-  },
-  statusConfirmed: {
-    color: "green",
-    fontWeight: "bold",
-    marginTop: 5,
-    textAlign: "center",
-  },
-  cancelButton: {
-    backgroundColor: "#aaa",
-    padding: 8,
-    borderRadius: 5,
+  infoPill: {
+    flexDirection: "row-reverse",
     alignItems: "center",
-    marginTop: 5,
+    backgroundColor: "#FFF1E5",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginLeft: 8,
+    flexShrink: 1,
   },
-  cancelText: {
-    color: "white",
-    fontWeight: "bold",
+  infoPillIcon: {
+    marginLeft: 4,
+    color: "#16A34A",
   },
-  fullMessage: {
-    color: "red",
-    fontWeight: "bold",
+  infoPillText: {
+    fontSize: 11,
+    color: "#374151",
+    textAlign: "right",
+  },
+
+  primaryButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "#FF8A3D",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 90,
+  },
+  primaryButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 13,
     textAlign: "center",
-    marginTop: 5,
+  },
+
+  secondaryButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#FFCAA0",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 90,
+    backgroundColor: "#FFFFFF",
+  },
+  secondaryButtonText: {
+    color: "#FF8A3D",
+    fontWeight: "600",
+    fontSize: 13,
+    textAlign: "center",
+  },
+
+  disabledButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 90,
+  },
+  disabledButtonText: {
+    color: "#9CA3AF",
+    fontWeight: "600",
+    fontSize: 13,
+    textAlign: "center",
   },
 });
