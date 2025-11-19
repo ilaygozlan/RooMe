@@ -94,7 +94,10 @@ const normalizeImages = (
   const baseUrl = ENV.apiBaseUrl;
   const asArray: string[] =
     typeof images === "string"
-      ? images.split(",").map((s) => s.trim()).filter(Boolean)
+      ? images
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
       : Array.isArray(images)
       ? images
       : [];
@@ -124,6 +127,18 @@ export default function ApartmentCard({
   onShare,
 }: ApartmentCardProps) {
   const router = useRouter();
+
+  const handleCreatorPress = () => {
+    const openUser = (globalThis as any)?.__openUserProfile__;
+    if (typeof openUser === "function") {
+      openUser(1); //creator id
+    } else {
+      router.push({
+        pathname: "UserProfile" as any,
+        params: { userId: apt.Creator_ID },
+      });
+    }
+  };
 
   const handleShareApartment = async (apt: Apartment): Promise<void> => {
     if (onShare) {
@@ -161,14 +176,7 @@ export default function ApartmentCard({
         <Text style={styles.typeText}>{getTypeName(apt.ApartmentType)}</Text>
       </View>
 
-      <TouchableOpacity
-        onPress={() =>
-          router.push({
-            pathname: "UserProfile" as any,
-            params: { userId: apt.Creator_ID },
-          })
-        }
-      >
+      <TouchableOpacity onPress={handleCreatorPress}>
         <View style={styles.creatorContainer}>
           <Image
             source={{
@@ -183,8 +191,8 @@ export default function ApartmentCard({
       </TouchableOpacity>
 
       <View style={styles.cardContent}>
-        <PhotoCollage 
-          images={normalizeImages(apt.Images)} 
+        <PhotoCollage
+          images={normalizeImages(apt.Images)}
           onImagePress={handleCardPress}
         />
 
@@ -222,7 +230,7 @@ export default function ApartmentCard({
             isSavedByUser={/* apt.IsSavedByUser */ false} // boolean
             numOfSaves={/* apt.NumOfSaves ?? */ 0} // optional
             showCount={false}
-          /> 
+          />
         </View>
       )}
     </View>

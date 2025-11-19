@@ -2,22 +2,21 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Modal } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-
 import { useApartments, type Apartment } from "@/context/ApartmentsContext";
 import ApartmentDetails from "@/components/apartment/apartmentDetails";
 import HouseLoading from "@/components/ui/loadingHouseSign";
-
 
 import { SearchHeader } from "@/components/home/searchHeader";
 import { ApartmentList } from "@/components/home/apartmentList";
 import { LoadingSection } from "@/components/home/loadingSection";
 import { useHideOnScroll } from "@/hooks/homeHooks/useHideOnScroll";
 import {
-useApartmentsSearch,
-type FiltersJson,
-type LocationSuggest,
+  useApartmentsSearch,
+  type FiltersJson,
+  type LocationSuggest,
 } from "@/hooks/homeHooks/useApartmentsSearch";
 
+import UserProfile from "@/components/userProfile"; // ⬅ adjust path if needed
 
 export type ApartmentProps = { hideIcons?: boolean };
 
@@ -115,7 +114,7 @@ export default function HomeScreen(props: ApartmentProps) {
         }}
         onEndReached={() => {
           if (!home.hasMore || home.loading) return;
-          if (!canLoadMore()) return; // protects multiple triggers
+          if (!canLoadMore()) return;
           loadHomeNextPage();
         }}
         onRefresh={() => {
@@ -134,18 +133,18 @@ export default function HomeScreen(props: ApartmentProps) {
         <HouseLoading text="טוען דירות..." overlay={true} />
       )}
 
-      {/* Details modal */}
+      {/* Details + Profile modals */}
       <DetailsPortal />
+      <UserProfilePortal />
     </View>
   );
 }
 
-// A tiny portal that renders the modal; keeps HomeScreen lean
+// Apartment details portal
 function DetailsPortal() {
   const [visible, setVisible] = useState(false);
   const [apt, setApt] = useState<Apartment | null>(null);
 
-  // Render prop would be cleaner; kept simple for drop-in use
   (globalThis as any).__openAptDetails__ = (apartment: Apartment) => {
     setApt(apartment);
     setVisible(true);
@@ -167,6 +166,41 @@ function DetailsPortal() {
           onClose={() => {
             setVisible(false);
             setApt(null);
+          }}
+        />
+      )}
+    </Modal>
+  );
+}
+
+// User profile portal – open like apartment details
+function UserProfilePortal() {
+  const [visible, setVisible] = useState(false);
+  const [userId, setUserId] = useState<number | string | null>(null);
+
+  (globalThis as any).__openUserProfile__ = (
+    id: number | string | null | undefined
+  ) => {
+    if (id == null) return;
+    setUserId(id);
+    setVisible(true);
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      onRequestClose={() => {
+        setVisible(false);
+        setUserId(null);
+      }}
+    >
+      {userId !== null && (
+        <UserProfile
+          userId={userId}
+          onClose={() => {
+            setVisible(false);
+            setUserId(null);
           }}
         />
       )}
