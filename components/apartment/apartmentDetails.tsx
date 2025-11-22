@@ -21,9 +21,11 @@ import MapView, { Marker, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import API from "../config";
 
+import { useTheme } from "@/lib/ui/ThemeProvider";
 import { labelToIcon } from "@/utils/labelIcons";
 import { labelTranslations } from "@/utils/labelTranslations";
-
+import { getDefaultAmenities, type NearbyPlace } from "@/utils/nearbyPlaces";
+import { fetchNearbyPlaces } from "@/utils/nearbyPlaces";
 // ------------------ Types ------------------
 
 type LabelItem = { value?: string } | string;
@@ -72,10 +74,36 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
   const carouselRef = useRef<ScrollView | null>(null);
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { palette } = useTheme();
 
   const [activeSlide, setActiveSlide] = useState<number>(0);
   const [userInfo, setUserInfo] = useState<any>(null);
   const [containerWidth, setContainerWidth] = useState<number>(width);
+  const [nearbyAmenities, setNearbyAmenities] = useState<NearbyPlace[]>(
+    getDefaultAmenities()
+  );
+  const [loadingAmenities, setLoadingAmenities] = useState(false);
+  const aptLocation = JSON.parse(apt?.Location?.trim());
+
+  const [nearbyPlaces, setNearbyPlaces] = useState<NearbyPlace[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      setLoadingAmenities(true);
+      const res = await fetchNearbyPlaces(
+        aptLocation.latitude,
+        aptLocation.longitude,
+        "AIzaSyCGucSUapSIUa_ykXy0K8tl6XR-ITXRj3o"
+      );
+      setNearbyPlaces(res);
+      if (res.length === 0 || res === undefined) {
+        setLoadingAmenities(true);
+      } else {
+        setLoadingAmenities(false);
+      }
+    }
+    load();
+  }, []);
 
   useEffect(() => {
     console.log("APT CHANGED:", apt.ApartmentID);
@@ -113,6 +141,25 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
     return () => clearInterval(interval);
   }, [activeSlide, apt.ApartmentType, apt.Roommates]);
 
+  // Parse location data first (before useEffect that uses it)
+  const locationData = (() => {
+    try {
+      const locationStr = apt?.Location?.trim();
+      if (locationStr?.startsWith("{") && locationStr?.endsWith("}")) {
+        const parsed = JSON.parse(locationStr) as {
+          address?: string;
+          latitude?: number;
+          longitude?: number;
+        };
+        return parsed;
+      }
+      return null;
+    } catch (err) {
+      console.warn("שגיאה בפענוח מיקום:", err);
+      return null;
+    }
+  })();
+
   const getTypeName = (type: Apartment["ApartmentType"]): string => {
     switch (type) {
       case 0:
@@ -136,7 +183,9 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
       const parsed = JSON.parse(fixedJson) as LabelItem[];
       return parsed
         .map((item) =>
-          typeof item === "string" ? item.toLowerCase() : item.value?.toLowerCase()
+          typeof item === "string"
+            ? item.toLowerCase()
+            : item.value?.toLowerCase()
         )
         .filter((v): v is string => !!v && !!labelToIcon[v]);
     } catch (e) {
@@ -171,40 +220,22 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
 
   const resolvedAddress = (() => {
     try {
-      const locationStr = apt?.Location?.trim();
-      if (locationStr?.startsWith("{") && locationStr?.endsWith("}")) {
-        const parsed = JSON.parse(locationStr) as { address?: string; latitude?: number; longitude?: number };
-        return parsed?.address || "כתובת לא זמינה";
-      }
-      return locationStr || "כתובת לא זמינה";
+      return locationData?.address || apt?.Location?.trim() || "כתובת לא זמינה";
     } catch (err) {
       console.warn("שגיאה בפענוח כתובת:", err);
       return "כתובת לא זמינה";
     }
   })();
 
-  const locationData = (() => {
-    try {
-      const locationStr = apt?.Location?.trim();
-      if (locationStr?.startsWith("{") && locationStr?.endsWith("}")) {
-        const parsed = JSON.parse(locationStr) as { address?: string; latitude?: number; longitude?: number };
-        return parsed;
-      }
-      return null;
-    } catch (err) {
-      console.warn("שגיאה בפענוח מיקום:", err);
-      return null;
-    }
-  })();
-
-  const mapRegion: Region | null = locationData?.latitude && locationData?.longitude
-    ? {
-        latitude: locationData.latitude,
-        longitude: locationData.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      }
-    : null;
+  const mapRegion: Region | null =
+    locationData?.latitude && locationData?.longitude
+      ? {
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        }
+      : null;
 
   const handleViewLargerMap = () => {
     if (locationData?.latitude && locationData?.longitude) {
@@ -218,7 +249,9 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
           android: `geo:${locationData.latitude},${locationData.longitude}?q=${locationData.latitude},${locationData.longitude}`,
         });
         if (url) {
-          Linking.openURL(url).catch((e) => console.error("Error opening maps:", e));
+          Linking.openURL(url).catch((e) =>
+            console.error("Error opening maps:", e)
+          );
         }
       });
     }
@@ -236,13 +269,19 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
           >
             {/* Header */}
             <View style={styles.headerRow}>
-              <TouchableOpacity onPress={onClose} style={styles.iconBtn} activeOpacity={0.7}>
+              <TouchableOpacity
+                onPress={onClose}
+                style={styles.iconBtn}
+                activeOpacity={0.7}
+              >
                 <Ionicons name="arrow-back" size={22} color="#0F172A" />
               </TouchableOpacity>
 
               <View style={styles.headerMeta}>
                 <View style={styles.typeBadge}>
-                  <Text style={styles.typeBadgeText}>{getTypeName(apt.ApartmentType)}</Text>
+                  <Text style={styles.typeBadgeText}>
+                    {getTypeName(apt.ApartmentType)}
+                  </Text>
                 </View>
                 <View style={styles.likeRow}>
                   <MaterialIcons
@@ -263,12 +302,22 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
               />
               <View style={styles.overlayRow}>
                 <View style={styles.pricePill}>
-                  <MaterialIcons name="attach-money" size={18} color="#0F172A" />
+                  <MaterialIcons
+                    name="attach-money"
+                    size={18}
+                    color="#0F172A"
+                  />
                   <Text style={styles.pricePillText}>{apt.Price} ש"ח</Text>
                 </View>
                 <View style={styles.roomsPill}>
-                  <MaterialIcons name="meeting-room" size={18} color="#0F172A" />
-                  <Text style={styles.roomsPillText}>{apt.AmountOfRooms} חדרים</Text>
+                  <MaterialIcons
+                    name="meeting-room"
+                    size={18}
+                    color="#0F172A"
+                  />
+                  <Text style={styles.roomsPillText}>
+                    {apt.AmountOfRooms} חדרים
+                  </Text>
                 </View>
               </View>
             </View>
@@ -306,21 +355,40 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
                   </MapView>
                   <View style={styles.mapOverlay}>
                     <View style={styles.mapAddressCard}>
-                      <Text style={styles.mapAddressTitle}>{resolvedAddress.split(",")[0]}</Text>
-                      <Text style={styles.mapAddressSub}>{resolvedAddress}</Text>
-                      <TouchableOpacity onPress={handleViewLargerMap} style={styles.mapLink}>
+                      <Text style={styles.mapAddressTitle}>
+                        {resolvedAddress.split(",")[0]}
+                      </Text>
+                      <Text style={styles.mapAddressSub}>
+                        {resolvedAddress}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={handleViewLargerMap}
+                        style={styles.mapLink}
+                      >
                         <Text style={styles.mapLinkText}>צפה במפה גדולה</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
                 </View>
-                
+
                 {/* Nearby Amenities */}
                 <View style={styles.amenitiesContainer}>
-                  <NearbyAmenity icon="school" label="קמפוס" time="15 דק' הליכה" />
-                  <NearbyAmenity icon="cart" label="סופרמרקט" time="2 דק' הליכה" />
-                  <NearbyAmenity icon="beer" label="חיי לילה" time="2 דק' הליכה" />
-                  <NearbyAmenity icon="barbell" label="כושר" time="2 דק' הליכה" />
+                  {loadingAmenities ? (
+                    <Text
+                      style={[styles.loadingText, { color: palette.textMuted }]}
+                    >
+                      טוען מידע על הסביבה...
+                    </Text>
+                  ) : (
+                    nearbyPlaces.map((amenity) => (
+                      <NearbyAmenity
+                        key={amenity.type}
+                        icon={amenity.icon}
+                        label={amenity.label}
+                        time={`${amenity.walkingTime} הליכה`}
+                      />
+                    ))
+                  )}
                 </View>
               </View>
             )}
@@ -374,7 +442,7 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
 
             {/* Uploader */}
             <TouchableOpacity /* keep original optional navigation commented if needed */
-              /* onPress={() => {
+            /* onPress={() => {
                 router.push({
                   pathname: "UserProfile",
                   params: { userId: apt.Creator_ID as any },
@@ -392,7 +460,9 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
                   style={styles.uploaderAvatar}
                 />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.uploaderName}>{apt.Creator_FullName}</Text>
+                  <Text style={styles.uploaderName}>
+                    {apt.Creator_FullName}
+                  </Text>
                   <Text style={styles.uploaderSub}>
                     מעלה המודעה · מזהה #{apt.ApartmentID}
                   </Text>
@@ -404,11 +474,17 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
             {/* Extra details (kept intact) */}
             <View style={styles.card}>
               <Text style={styles.cardTitle}>פרטים נוספים</Text>
-              <ExtraDetails apt={{
-                ...apt,
-                Rental_ContractLength: apt.Rental_ContractLength ?? undefined,
-                Shared_NumberOfRoommates: apt.Shared_NumberOfRoommates ?? undefined,
-              } as any} />
+              <ExtraDetails
+                apt={
+                  {
+                    ...apt,
+                    Rental_ContractLength:
+                      apt.Rental_ContractLength ?? undefined,
+                    Shared_NumberOfRoommates:
+                      apt.Shared_NumberOfRoommates ?? undefined,
+                  } as any
+                }
+              />
             </View>
 
             <View style={{ height: 24 }} />
@@ -420,7 +496,15 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
 }
 
 /** ---------- Nearby Amenity Component ---------- */
-function NearbyAmenity({ icon, label, time }: { icon: string; label: string; time: string }) {
+function NearbyAmenity({
+  icon,
+  label,
+  time,
+}: {
+  icon: string;
+  label: string;
+  time: string;
+}) {
   const getIcon = () => {
     switch (icon) {
       case "school":
@@ -814,5 +898,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#64748B",
     textAlign: "right",
+  },
+  loadingText: {
+    fontSize: 14,
+    textAlign: "center",
+    paddingVertical: 16,
+    fontFamily: "Inter_400Regular",
   },
 });
