@@ -1,16 +1,10 @@
 import { useTheme } from "@/lib/ui/ThemeProvider";
 import { forwardRef } from "react";
-import { Text, TextInput, View } from "react-native";
+import { Text, TextInput, TextInputProps, View } from "react-native";
 
-type Props = {
+type Props = TextInputProps & {
   label?: string;
-  value: string;
-  onChangeText: (t: string) => void;
-  placeholder?: string;
-  secureTextEntry?: boolean;
   error?: string;
-  returnKeyType?: any;
-  onSubmitEditing?: () => void;
 };
 
 export default forwardRef<TextInput, Props>(function TextField({ label, error, ...p }, ref) {

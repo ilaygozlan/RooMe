@@ -19,7 +19,7 @@ export const light: Palette = {
   surface: "#FFFFFF",
   card: "#FFFFFF",
   muted: "#E9ECF1",
-  primary: "#0EA5E9",
+  primary: "#E3965A",
   onPrimary: "#FFFFFF",
   text: "#0B0B0C",
   textMuted: "#5A5E66",

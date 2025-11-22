@@ -25,6 +25,8 @@ import { EditProfileModal } from "@/components/profile/editProfileModal";
 import { InfoCard } from "@/components/profile/infoCard";
 import { AIButton } from "@/components/profile/AIButton";
 
+import { useAuth } from "@/lib/auth/AuthContext";
+
 import { useApartments, type Apartment } from "@/context/ApartmentsContext";
 
 
@@ -32,6 +34,7 @@ type MyProfileProps = { myId: number | string };
 
 const MyProfile: React.FC<MyProfileProps> = ({ myId }) => {
   const router = useRouter();
+  const {logout} = useAuth();
   
   const API = "";
   const {home} = useApartments();
@@ -64,8 +67,8 @@ console.log(profile);
   };
 
   const handleLogout = async () => {
-    await signOut(auth);
-    router.replace("/Login");
+    await logout();
+    router.replace("/(auth)/login");
   };
 
   if (loading) return <HouseLoading text="הפרופיל שלי" />;
