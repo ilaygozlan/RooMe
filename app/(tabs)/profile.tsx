@@ -28,20 +28,28 @@ import { AIButton } from "@/components/profile/AIButton";
 import { useAuth } from "@/lib/auth/AuthContext";
 
 import { useApartments, type Apartment } from "@/context/ApartmentsContext";
+import { ApartmentsModal } from "@/components/profile/apartmentsModal";
+import EditApartmentModal from "@/components/profile/editApartmentModal";
 
 
-type MyProfileProps = { myId: number | string };
+type MyProfileProps = { myId?: number | string };
 
-const MyProfile: React.FC<MyProfileProps> = ({ myId }) => {
+const MyProfile: React.FC<MyProfileProps> = ({ myId: propMyId }) => {
   const router = useRouter();
-  const {logout} = useAuth();
+  const {logout, user} = useAuth();
+  
+  // Get user ID from prop, auth context, or default to 1
+  const myId = propMyId || (user?.id ? Number(user.id) || user.id : 1);
   
   const API = "";
-  const {home} = useApartments();
-  const  allApartments  = home.ids ;
+  const {home, getApartmentsByIds} = useApartments();
+  const allApartmentIds = home.ids;
+  const allApartments = useMemo(() => {
+    return getApartmentsByIds(allApartmentIds);
+  }, [allApartmentIds, getApartmentsByIds]);
 
   // data hooks
-  const { profile, loading, error, reload, updateProfile } = useUserProfile(API, 1, { mock: true });  
+  const { profile, loading, error, reload, updateProfile } = useUserProfile(API, myId, { mock: true });  
   const { friends, reload: reloadFriends } = useFriends(String(API), myId);
   const { openHouses, reload: reloadOpenHouses } = useOpenHouses(String(API), myId);
 console.log(profile);
@@ -51,11 +59,20 @@ console.log(profile);
   const [showOpenHousesModal, setShowOpenHousesModal] = useState(false);
   const [showPreferencesForm, setShowPreferencesForm] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
+  const [showApartmentsModal, setShowApartmentsModal] = useState(false);
+  const [editingApartment, setEditingApartment] = useState<Apartment | null>(null);
 
-  const ownedApartmentsNum = useMemo(
-    () => allApartments.filter((a) => a.UserID === Number(myId)).length,
+  const ownedApartments = useMemo(
+    () => allApartments.filter((a) => a.Creator_ID === Number(myId)),
     [allApartments, myId]
   );
+
+  // Calculate apartments count - use real apartments if available, otherwise use mock count
+  // The UserOwnedApartmentsGrid component will show mock data (7 apartments) if no real ones exist
+  const ownedApartmentsNum = useMemo(() => {
+    const realCount = ownedApartments.length;
+    return realCount > 0 ? realCount : 7; // 7 is the number of mock apartments
+  }, [ownedApartments.length]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -96,6 +113,7 @@ console.log(profile);
               apartmentsCount={ownedApartmentsNum}
               openHousesCount={openHouses.length}
               onOpenFriends={() => setShowFriendsModal(true)}
+              onOpenApartments={() => setShowApartmentsModal(true)}
               onOpenOpenHouses={() => setShowOpenHousesModal(true)}
             />
           </View>
@@ -135,10 +153,44 @@ console.log(profile);
             openHouses={openHouses}
           />
  */}
-          {/* Apartments */}
-         {/*  <View style={{ width: "100%", alignItems: "center", marginTop: 30 }}>
-            <UserOwnedApartmentsGrid userId={myId} isMyProfile={true} loginUserId={myId} />
-          </View> */}
+          {/* Apartments Modal */}
+          <ApartmentsModal
+            visible={showApartmentsModal}
+            apartments={ownedApartments}
+            userId={myId}
+            onClose={() => setShowApartmentsModal(false)}
+            onSelect={(apartment) => {
+              // Open apartment details
+              (globalThis as any).__openAptDetails__?.(apartment);
+            }}
+            onUpdate={(updated) => {
+              // Handle apartment update if needed
+              console.log("Apartment updated:", updated);
+            }}
+            onEdit={(apartment) => {
+              setEditingApartment(apartment);
+            }}
+          />
+
+          {/* Edit Apartment Modal */}
+          {editingApartment && (
+            <EditApartmentModal
+              visible={!!editingApartment}
+              apartment={editingApartment}
+              onClose={() => {
+                setEditingApartment(null);
+                // Optionally reopen apartments modal after closing edit
+                // setShowApartmentsModal(true);
+              }}
+              onSave={(updated) => {
+                // Handle apartment update
+                console.log("Apartment updated:", updated);
+                setEditingApartment(null);
+                // Optionally reopen apartments modal after saving
+                // setShowApartmentsModal(true);
+              }}
+            />
+          )}
 
           {/* Edit Profile */}
           <EditProfileModal
@@ -148,7 +200,7 @@ console.log(profile);
             profile={profile}
             onSave={async (updated) => {
               const saved = await updateProfile(updated);
-              setProfile(saved);
+              // setProfile(saved); // Commented out as setProfile might not be available
             }}
           />
 

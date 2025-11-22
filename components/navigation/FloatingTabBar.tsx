@@ -162,7 +162,7 @@ export default function FloatingCenterFabTabBar({
 
         <Container
           // @ts-ignore BlurView only
-          intensity={90}
+          intensity={100}
           tint="light"
           style={[
             styles.container,

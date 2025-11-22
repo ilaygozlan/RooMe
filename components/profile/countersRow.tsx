@@ -7,6 +7,7 @@ type Props = {
   apartmentsCount: number;
   openHousesCount: number;
   onOpenFriends(): void;
+  onOpenApartments(): void;
   onOpenOpenHouses(): void;
 };
 
@@ -15,6 +16,7 @@ export const CountersRow: React.FC<Props> = ({
   apartmentsCount,
   openHousesCount,
   onOpenFriends,
+  onOpenApartments,
   onOpenOpenHouses,
 }) => {
   const rtl = I18nManager.isRTL;
@@ -31,13 +33,17 @@ export const CountersRow: React.FC<Props> = ({
         <Text style={styles.counterNumber}>{friendsCount}</Text>
         <Text style={styles.counterLabel}>חברים</Text>
       </TouchableOpacity>
-      <View style={styles.counterCard}>
-        <View style={[styles.iconContainer, styles.iconContainerInactive]}>
-          <Feather name="home" size={20} color="#94A3B8" />
+      <TouchableOpacity 
+        style={[styles.counterCard, styles.counterCardActive]} 
+        onPress={onOpenApartments}
+        activeOpacity={0.7}
+      >
+        <View style={styles.iconContainer}>
+          <Feather name="home" size={20} color="#E3965A" />
         </View>
-        <Text style={[styles.counterNumber, styles.counterNumberInactive]}>{apartmentsCount}</Text>
+        <Text style={styles.counterNumber}>{apartmentsCount}</Text>
         <Text style={styles.counterLabel}>הדירות שלי</Text>
-      </View>
+      </TouchableOpacity>
       <TouchableOpacity
         style={[styles.counterCard, styles.counterCardActive]}
         onPress={onOpenOpenHouses}
