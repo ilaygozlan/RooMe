@@ -9,14 +9,17 @@ import {
   Platform,
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
+import { useSavedApartments } from "@/context/SavedApartmentsContext";
+import { useApartments, type Apartment } from "@/context/ApartmentsContext";
 
 type Props = {
   apartmentId: number;
-  isSavedByUser: boolean;   // initial state
+  isSavedByUser?: boolean;   // initial state (optional, will use context if available)
   numOfSaves?: number;      // optional counter
   showCount?: boolean;      // default: true
   disabled?: boolean;
   onToggleLocal?: (saved: boolean) => void; // callback after local toggle
+  apartment?: Apartment; // optional apartment data for context
 };
 
 const ORANGE = "#E3965A";
@@ -24,23 +27,45 @@ const GRAY = "gray";
 const INK = "#4c4f52ff";
 const SIZE = 23;
 
-// בדיקות ללא API
-const mockMode = true;
-
 export default function SaveButtonIGIcon({
   apartmentId,
-  isSavedByUser,
+  isSavedByUser: propIsSaved,
   numOfSaves = 0,
   showCount = true,
   disabled = false,
   onToggleLocal,
+  apartment,
 }: Props) {
-  const [saved, setSaved] = useState(isSavedByUser);
+  // Always use context (provider should be available, but has safe fallback)
+  const savedApartmentsContext = useSavedApartments();
+
+  const { entities } = useApartments();
+  const apartmentData = apartment || entities[String(apartmentId)];
+
+  // Determine saved state: context > props > false
+  const contextIsSaved = savedApartmentsContext.isSaved(apartmentId);
+  const initialSaved = savedApartmentsContext.savedApartmentIds.size > 0
+    ? contextIsSaved
+    : propIsSaved ?? false;
+
+  const [saved, setSaved] = useState(initialSaved);
   const [count, setCount] = useState(numOfSaves);
 
-  // בזמן בדיקות לא דורכים על ה־state מה־props
-  useEffect(() => { if (!mockMode) setSaved(isSavedByUser); }, [isSavedByUser]);
-  useEffect(() => { if (!mockMode) setCount(numOfSaves); }, [numOfSaves]);
+  // Sync with context when it changes
+  useEffect(() => {
+    const contextSaved = savedApartmentsContext.isSaved(apartmentId);
+    if (savedApartmentsContext.savedApartmentIds.size > 0 || contextSaved !== propIsSaved) {
+      setSaved(contextSaved);
+    } else if (propIsSaved !== undefined) {
+      setSaved(propIsSaved);
+    }
+  }, [savedApartmentsContext.savedApartmentIds, apartmentId, propIsSaved, savedApartmentsContext]);
+
+  useEffect(() => {
+    if (numOfSaves !== undefined) {
+      setCount(numOfSaves);
+    }
+  }, [numOfSaves]);
 
   // אנימציות קטנות: פופ + גלואו עדין
   const scale = useRef(new Animated.Value(1)).current;
@@ -66,7 +91,7 @@ export default function SaveButtonIGIcon({
     if (disabled) return;
     const toSaved = !saved;
 
-    // עדכון אופטימיסטי
+    // Optimistic update
     setSaved(toSaved);
     setCount((c) => c + (toSaved ? 1 : -1));
     onToggleLocal?.(toSaved);
@@ -74,14 +99,17 @@ export default function SaveButtonIGIcon({
     animatePop();
     if (toSaved) pulseGlow();
 
-    if (!mockMode) {
-      try {
-        // await (toSaved ? saveApartment() : unsaveApartment());
-      } catch {
-        // revert על כישלון
-        setSaved(!toSaved);
-        setCount((c) => c + (toSaved ? -1 : 1));
-      }
+    // Use context to persist the change
+    try {
+      await savedApartmentsContext.toggleSaved(
+        apartmentId,
+        apartmentData
+      );
+    } catch (err) {
+      // Revert on error
+      setSaved(!toSaved);
+      setCount((c) => c + (toSaved ? -1 : 1));
+      console.error("Error toggling saved status:", err);
     }
   };
 

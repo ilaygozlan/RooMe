@@ -1,31 +1,30 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import { GooglePlacesAutocomplete } from "@/components/home/googlePlacesCustomAPI";
+import HouseLoading from "@/components/ui/loadingHouseSign";
 import {
-  View,
-  Text,
-  KeyboardAvoidingView,
-  Platform,
-  FlatList,
-  TouchableOpacity,
-  Alert,
-  ScrollView,
+    BooleansRow,
+    CategorySelector,
+    DatesRow,
+    ImagePickerRow,
+    LabeledInput,
+    ProgressIndicator,
+    PropertyTypeGrid,
+    SectionTitle,
+    uploadFormStyles as styles,
+    TypeSpecificFields,
+} from "@/components/uploadApartment/";
+import { massageApartmentForList, normalizeFileForFormData } from "@/utils/uploadHelpers";
+import { useRouter } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import HouseLoading from "@/components/ui/loadingHouseSign";
-import { useRouter } from "expo-router";
-import { GooglePlacesAutocomplete } from "@/components/home/googlePlacesCustomAPI";
-import {
-  CategorySelector,
-  ImagePickerRow,
-  PropertyTypeGrid,
-  DatesRow,
-  BooleansRow,
-  TypeSpecificFields,
-  SectionTitle,
-  LabeledInput,
-  ProgressIndicator,
-  uploadFormStyles as styles,
-} from "@/components/uploadApartment/";
-import { normalizeFileForFormData, massageApartmentForList } from "@/utils/uploadHelpers";
 
 const STEP_LABELS = ["סוג דירה", "תמונות", "פרטים"];
 

@@ -230,6 +230,7 @@ export default function ApartmentCard({
             isSavedByUser={/* apt.IsSavedByUser */ false} // boolean
             numOfSaves={/* apt.NumOfSaves ?? */ 0} // optional
             showCount={false}
+            apartment={apt}
           />
         </View>
       )}

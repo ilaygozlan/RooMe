@@ -38,6 +38,7 @@ const defaultPalette: Palette = {
 // Map simple names → Ionicons
 const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
   home: "home",
+  saved: "bookmark",
   search: "search",
   messages: "chatbubble-ellipses",
   profile: "person",
