@@ -317,7 +317,11 @@ export const ApartmentsModal: React.FC<Props> = ({
   };
 
   const handleView = (apartment: Apartment) => {
-    if (onSelect) {
+    // Open edit form instead of details
+    if (onEdit) {
+      onClose();
+      onEdit(apartment);
+    } else if (onSelect) {
       onSelect(apartment);
     } else {
       (globalThis as any).__openAptDetails__?.(apartment);

@@ -29,7 +29,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 
 import { useApartments, type Apartment } from "@/context/ApartmentsContext";
 import { ApartmentsModal } from "@/components/profile/apartmentsModal";
-import EditApartmentModal from "@/components/profile/editApartmentModal";
+import EditApartmentDetailsForm from "@/components/profile/editApartmentDetailsForm";
 
 
 type MyProfileProps = { myId?: number | string };
@@ -172,22 +172,18 @@ console.log(profile);
             }}
           />
 
-          {/* Edit Apartment Modal */}
+          {/* Edit Apartment Form */}
           {editingApartment && (
-            <EditApartmentModal
+            <EditApartmentDetailsForm
               visible={!!editingApartment}
               apartment={editingApartment}
               onClose={() => {
                 setEditingApartment(null);
-                // Optionally reopen apartments modal after closing edit
-                // setShowApartmentsModal(true);
               }}
               onSave={(updated) => {
                 // Handle apartment update
                 console.log("Apartment updated:", updated);
                 setEditingApartment(null);
-                // Optionally reopen apartments modal after saving
-                // setShowApartmentsModal(true);
               }}
             />
           )}
