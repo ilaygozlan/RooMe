@@ -328,7 +328,7 @@ export default function UploadApartmentForm() {
                 }}
                 isRowScrollable={false}
                 query={{
-                  key: "YOUR_GOOGLE_PLACES_KEY",
+                  key: "AIzaSyCGucSUapSIUa_ykXy0K8tl6XR-ITXRj3o",
                   language: "he",
                   components: "country:il",
                 }}

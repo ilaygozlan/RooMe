@@ -26,7 +26,7 @@ const defaultStyles = {
     flex: 1,
   },
   textInputContainer: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
   },
   textInput: {
     backgroundColor: '#a04343ff',
@@ -43,14 +43,17 @@ const defaultStyles = {
     backgroundColor: '#FFFFFF',
     padding: 13,
     minHeight: 44,
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
   },
   loader: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     height: 20,
   },
-  description: {},
+  description: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
   separator: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: '#c8c7cc',
@@ -787,7 +790,13 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
   const _getFlatList = useCallback(() => {
     if (stateText !== '' && listViewDisplayed === true) {
       return (
-        <View style={{ zIndex: 999, position: 'absolute', top: 50, left: 0, right: 0 }}>
+        <View style={{ 
+          zIndex: 999, 
+          position: 'absolute', 
+          top: 50, 
+          left: 0, 
+          right: 0,
+        }}>
           {[...dataSource].slice(0, 5).map((item, index) => {
             return _renderRow(item, index);
           })}

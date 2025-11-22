@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   price: {
     color:"#f97e20ff",
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 17,
     marginTop: 5,
     textAlign: "right",
   },
