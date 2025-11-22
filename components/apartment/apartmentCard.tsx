@@ -274,8 +274,9 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   price: {
-    fontSize: 16,
+    color:"#f97e20ff",
     fontWeight: "bold",
+    fontSize: 16,
     marginTop: 5,
     textAlign: "right",
   },

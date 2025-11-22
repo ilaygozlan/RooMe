@@ -1,23 +1,24 @@
-import React, { useRef, useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Dimensions,
-  Animated,
-  FlatList,
-  Platform,
-} from "react-native";
-import { MaterialIcons, Ionicons } from "@expo/vector-icons";
+import ApartmentGallery from "@/components/apartment/apartmentGallery";
+import ExtraDetails from "@/components/apartment/extraApartmentDetails";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Dimensions,
+  FlatList,
+  Image,
+  Linking,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import MapView, { Marker, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import  Screen  from "@/components/Screen";
-import ExtraDetails from "@/components/apartment/extraApartmentDetails";
-import ApartmentGallery from "@/components/apartment/apartmentGallery";
 import API from "../config";
 
 import { labelToIcon } from "@/utils/labelIcons";
@@ -157,7 +158,7 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
               {React.cloneElement(labelToIcon[label], {
                 size: 18,
                 color: "#E3965A",
-              })}
+              } as any)}
               <Text style={styles.pillText}>
                 {labelTranslations[label] || label}
               </Text>
@@ -172,7 +173,7 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
     try {
       const locationStr = apt?.Location?.trim();
       if (locationStr?.startsWith("{") && locationStr?.endsWith("}")) {
-        const parsed = JSON.parse(locationStr) as { address?: string };
+        const parsed = JSON.parse(locationStr) as { address?: string; latitude?: number; longitude?: number };
         return parsed?.address || "כתובת לא זמינה";
       }
       return locationStr || "כתובת לא זמינה";
@@ -181,6 +182,47 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
       return "כתובת לא זמינה";
     }
   })();
+
+  const locationData = (() => {
+    try {
+      const locationStr = apt?.Location?.trim();
+      if (locationStr?.startsWith("{") && locationStr?.endsWith("}")) {
+        const parsed = JSON.parse(locationStr) as { address?: string; latitude?: number; longitude?: number };
+        return parsed;
+      }
+      return null;
+    } catch (err) {
+      console.warn("שגיאה בפענוח מיקום:", err);
+      return null;
+    }
+  })();
+
+  const mapRegion: Region | null = locationData?.latitude && locationData?.longitude
+    ? {
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      }
+    : null;
+
+  const handleViewLargerMap = () => {
+    if (locationData?.latitude && locationData?.longitude) {
+      // Open in Google Maps
+      const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${locationData.latitude},${locationData.longitude}`;
+      Linking.openURL(googleMapsUrl).catch((err) => {
+        console.error("Error opening Google Maps:", err);
+        // Fallback to native maps
+        const url = Platform.select({
+          ios: `maps://maps.apple.com/?q=${locationData.latitude},${locationData.longitude}`,
+          android: `geo:${locationData.latitude},${locationData.longitude}?q=${locationData.latitude},${locationData.longitude}`,
+        });
+        if (url) {
+          Linking.openURL(url).catch((e) => console.error("Error opening maps:", e));
+        }
+      });
+    }
+  };
 
   return (
     <View>
@@ -240,6 +282,48 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
                 </Text>
               )}
             </View>
+
+            {/* Location & Map */}
+            {mapRegion && (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>מיקום וסביבה</Text>
+                <View style={styles.mapContainer}>
+                  <MapView
+                    style={styles.map}
+                    initialRegion={mapRegion}
+                    scrollEnabled={false}
+                    zoomEnabled={false}
+                    pitchEnabled={false}
+                    rotateEnabled={false}
+                  >
+                    <Marker
+                      coordinate={{
+                        latitude: mapRegion.latitude,
+                        longitude: mapRegion.longitude,
+                      }}
+                      pinColor="#E3965A"
+                    />
+                  </MapView>
+                  <View style={styles.mapOverlay}>
+                    <View style={styles.mapAddressCard}>
+                      <Text style={styles.mapAddressTitle}>{resolvedAddress.split(",")[0]}</Text>
+                      <Text style={styles.mapAddressSub}>{resolvedAddress}</Text>
+                      <TouchableOpacity onPress={handleViewLargerMap} style={styles.mapLink}>
+                        <Text style={styles.mapLinkText}>צפה במפה גדולה</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+                
+                {/* Nearby Amenities */}
+                <View style={styles.amenitiesContainer}>
+                  <NearbyAmenity icon="school" label="קמפוס" time="15 דק' הליכה" />
+                  <NearbyAmenity icon="cart" label="סופרמרקט" time="2 דק' הליכה" />
+                  <NearbyAmenity icon="beer" label="חיי לילה" time="2 דק' הליכה" />
+                  <NearbyAmenity icon="barbell" label="כושר" time="2 דק' הליכה" />
+                </View>
+              </View>
+            )}
 
             {/* Quick facts grid */}
             <View style={styles.card}>
@@ -320,13 +404,45 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
             {/* Extra details (kept intact) */}
             <View style={styles.card}>
               <Text style={styles.cardTitle}>פרטים נוספים</Text>
-              <ExtraDetails apt={apt} />
+              <ExtraDetails apt={{
+                ...apt,
+                Rental_ContractLength: apt.Rental_ContractLength ?? undefined,
+                Shared_NumberOfRoommates: apt.Shared_NumberOfRoommates ?? undefined,
+              } as any} />
             </View>
 
             <View style={{ height: 24 }} />
           </View>
         }
       />
+    </View>
+  );
+}
+
+/** ---------- Nearby Amenity Component ---------- */
+function NearbyAmenity({ icon, label, time }: { icon: string; label: string; time: string }) {
+  const getIcon = () => {
+    switch (icon) {
+      case "school":
+        return <Ionicons name="school" size={20} color="#E3965A" />;
+      case "cart":
+        return <Ionicons name="cart" size={20} color="#E3965A" />;
+      case "beer":
+        return <Ionicons name="beer" size={20} color="#E3965A" />;
+      case "barbell":
+        return <Ionicons name="barbell" size={20} color="#E3965A" />;
+      default:
+        return <Ionicons name="location" size={20} color="#E3965A" />;
+    }
+  };
+
+  return (
+    <View style={styles.amenityItem}>
+      {getIcon()}
+      <View style={styles.amenityTextContainer}>
+        <Text style={styles.amenityLabel}>{label}</Text>
+        <Text style={styles.amenityTime}>{time}</Text>
+      </View>
     </View>
   );
 }
@@ -612,6 +728,90 @@ const styles = StyleSheet.create({
   },
   uploaderSub: {
     fontSize: 12,
+    color: "#64748B",
+    textAlign: "right",
+  },
+
+  /* Map Section */
+  mapContainer: {
+    height: 250,
+    borderRadius: 16,
+    overflow: "hidden",
+    marginBottom: 16,
+    position: "relative",
+  },
+  map: {
+    width: "100%",
+    height: "100%",
+  },
+  mapOverlay: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    left: 10,
+  },
+  mapAddressCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  mapAddressTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#0F172A",
+    textAlign: "right",
+    marginBottom: 4,
+  },
+  mapAddressSub: {
+    fontSize: 13,
+    color: "#64748B",
+    textAlign: "right",
+    marginBottom: 8,
+  },
+  mapLink: {
+    alignSelf: "flex-start",
+  },
+  mapLinkText: {
+    fontSize: 13,
+    color: "#E3965A",
+    fontWeight: "600",
+    textAlign: "right",
+  },
+
+  /* Nearby Amenities */
+  amenitiesContainer: {
+    gap: 12,
+  },
+  amenityItem: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: "#FFF8F2",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#FFE3D1",
+  },
+  amenityTextContainer: {
+    flex: 1,
+  },
+  amenityLabel: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#0F172A",
+    textAlign: "right",
+    marginBottom: 2,
+  },
+  amenityTime: {
+    fontSize: 13,
     color: "#64748B",
     textAlign: "right",
   },
