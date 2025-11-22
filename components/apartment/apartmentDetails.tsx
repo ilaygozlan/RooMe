@@ -1,5 +1,6 @@
 import ApartmentGallery from "@/components/apartment/apartmentGallery";
 import ExtraDetails from "@/components/apartment/extraApartmentDetails";
+import SaveButtonIGIcon from "@/components/apartment/saveApartmentBtn";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useRouter } from "expo-router";
@@ -282,13 +283,14 @@ export default function ApartmentDetails({ apt, onClose }: Props) {
                     {getTypeName(apt.ApartmentType)}
                   </Text>
                 </View>
-                <View style={styles.likeRow}>
-                  <MaterialIcons
-                    name={apt.IsLikedByUser ? "favorite" : "favorite-border"}
-                    size={18}
-                    color={apt.IsLikedByUser ? "#E3965A" : "#94A3B8"}
+                <View style={styles.saveButtonContainer}>
+                  <SaveButtonIGIcon
+                    apartmentId={apt.ApartmentID}
+                    isSavedByUser={apt.IsLikedByUser}
+                    numOfSaves={apt.NumOfLikes || 0}
+                    showCount={true}
+                    apartment={apt}
                   />
-                  <Text style={styles.likeText}>{apt.NumOfLikes || 0}</Text>
                 </View>
               </View>
             </View>
@@ -612,21 +614,9 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 12,
   },
-  likeRow: {
-    flexDirection: "row-reverse",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  likeText: {
-    color: "#334155",
-    fontSize: 12,
-    fontWeight: "600",
+  saveButtonContainer: {
+    paddingHorizontal: 4,
+    paddingVertical: 4,
   },
 
   /* Gallery + Overlays */

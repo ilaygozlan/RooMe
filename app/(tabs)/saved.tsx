@@ -5,6 +5,7 @@ import React, { useCallback, useMemo, useState } from "react";
 import {
     Dimensions,
     FlatList,
+    Modal,
     RefreshControl,
     StyleSheet,
     Text,
@@ -14,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import ApartmentCard from "@/components/apartment/apartmentCard";
+import ApartmentDetails from "@/components/apartment/apartmentDetails";
 import HouseLoading from "@/components/ui/loadingHouseSign";
 import { useApartments, type Apartment } from "@/context/ApartmentsContext";
 import { useSavedApartments } from "@/context/SavedApartmentsContext";
@@ -146,7 +148,43 @@ export default function SavedApartmentsScreen() {
           }
         />
       )}
+
+      {/* Apartment Details Portal */}
+      <DetailsPortal />
     </View>
+  );
+}
+
+// Apartment details portal
+function DetailsPortal() {
+  const [visible, setVisible] = useState(false);
+  const [apt, setApt] = useState<Apartment | null>(null);
+
+  (globalThis as any).__openAptDetails__ = (apartment: Apartment) => {
+    setApt(apartment);
+    setVisible(true);
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      onRequestClose={() => {
+        setVisible(false);
+        setApt(null);
+      }}
+    >
+      {apt && (
+        <ApartmentDetails
+          key={apt.ApartmentID}
+          apt={apt}
+          onClose={() => {
+            setVisible(false);
+            setApt(null);
+          }}
+        />
+      )}
+    </Modal>
   );
 }
 

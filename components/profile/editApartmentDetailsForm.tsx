@@ -70,6 +70,8 @@ export default function EditApartmentDetailsForm({ visible, apartment, onClose, 
   const [isSaving, setIsSaving] = useState(false);
   const [containerWidth, setContainerWidth] = useState<number>(width);
   const scrollViewRef = useRef<ScrollView>(null);
+  const galleryScrollRef = useRef<ScrollView>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Form state
   const [apartmentType, setApartmentType] = useState<number | null>(null);
@@ -124,6 +126,7 @@ export default function EditApartmentDetailsForm({ visible, apartment, onClose, 
       setEntryDate(apartment.EntryDate ? apartment.EntryDate.split("T")[0] : "");
       setExitDate(apartment.ExitDate ? apartment.ExitDate.split("T")[0] : "");
       setPropertyTypeID(null);
+      setCurrentImageIndex(0);
     }
   }, [apartment, visible]);
 
@@ -268,41 +271,63 @@ export default function EditApartmentDetailsForm({ visible, apartment, onClose, 
             {/* Gallery with Edit */}
             <View style={styles.galleryWrap}>
               {images.length > 0 ? (
-                <ScrollView
-                  horizontal
-                  pagingEnabled
-                  showsHorizontalScrollIndicator={false}
-                  style={[styles.galleryScroll, { width: (containerWidth || width) - 32 }]}
-                >
-                  {images.map((img, idx) => (
-                    <View key={idx} style={[styles.galleryImageContainer, { width: (containerWidth || width) - 32 }]}>
-                      <Image source={{ uri: img }} style={styles.galleryImage} />
-                      <TouchableOpacity
-                        style={styles.removeImageBtn}
-                        onPress={() => removeImage(img)}
-                      >
-                        <MaterialIcons name="close" size={18} color="#fff" />
-                      </TouchableOpacity>
+                <>
+                  <ScrollView
+                    ref={galleryScrollRef}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    style={[styles.galleryScroll, { width: (containerWidth || width) - 32 }]}
+                    onScroll={(event) => {
+                      const offsetX = event.nativeEvent.contentOffset.x;
+                      const imageWidth = (containerWidth || width) - 32;
+                      const index = Math.round(offsetX / imageWidth);
+                      setCurrentImageIndex(Math.min(index, images.length - 1));
+                    }}
+                    scrollEventThrottle={16}
+                  >
+                    {images.map((img, idx) => (
+                      <View key={idx} style={[styles.galleryImageContainer, { width: (containerWidth || width) - 32 }]}>
+                        <Image source={{ uri: img }} style={styles.galleryImage} />
+                        <TouchableOpacity
+                          style={styles.removeImageBtn}
+                          onPress={() => removeImage(img)}
+                        >
+                          <MaterialIcons name="close" size={18} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
+                  
+                  {/* Dot Indicators */}
+                  {images.length > 1 && (
+                    <View style={styles.dotsContainer}>
+                      {images.map((_, idx) => (
+                        <View
+                          key={idx}
+                          style={[
+                            styles.dot,
+                            currentImageIndex === idx && styles.activeDot,
+                          ]}
+                        />
+                      ))}
                     </View>
-                  ))}
-                </ScrollView>
+                  )}
+                  
+                  {/* Add Photos Button - Bottom Center */}
+                  <TouchableOpacity style={styles.addPhotosButton} onPress={handleImagePick}>
+                    <MaterialIcons name="add-photo-alternate" size={20} color="#fff" />
+                    <Text style={styles.addPhotosButtonText}>הוסף תמונות</Text>
+                  </TouchableOpacity>
+                </>
               ) : (
                 <View style={styles.emptyGallery}>
                   <MaterialIcons name="photo-library" size={64} color="#CBD5E1" />
                   <Text style={styles.emptyGalleryText}>אין תמונות</Text>
-                </View>
-              )}
-              <TouchableOpacity style={styles.editImagesButton} onPress={handleImagePick}>
-                <MaterialIcons name="add-photo-alternate" size={18} color="#fff" />
-                <Text style={styles.editImagesButtonText}>
-                  {images.length > 0 ? "הוסף תמונות" : "הוסף תמונות"}
-                </Text>
-              </TouchableOpacity>
-              {images.length > 1 && (
-                <View style={styles.imageCounter}>
-                  <Text style={styles.imageCounterText}>
-                    {images.length} תמונות
-                  </Text>
+                  <TouchableOpacity style={styles.addPhotosButtonEmpty} onPress={handleImagePick}>
+                    <MaterialIcons name="add-photo-alternate" size={24} color="#fff" />
+                    <Text style={styles.addPhotosButtonText}>הוסף תמונות</Text>
+                  </TouchableOpacity>
                 </View>
               )}
               <View style={styles.overlayRow}>
@@ -740,23 +765,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#64748B",
   },
-  editImagesButton: {
-    position: "absolute",
-    top: 12,
-    left: 12,
-    flexDirection: "row-reverse",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(227, 150, 90, 0.9)",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  editImagesButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 12,
-  },
   galleryScroll: {
     height: 250,
     borderRadius: 16,
@@ -787,19 +795,60 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  imageCounter: {
-    position: "absolute",
-    top: 12,
-    left: 12,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
+  dotsContainer: {
+    flexDirection: "row-reverse",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 12,
+    marginBottom: 8,
   },
-  imageCounterText: {
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#CBD5E1",
+  },
+  activeDot: {
+    backgroundColor: "#E3965A",
+    width: 24,
+  },
+  addPhotosButton: {
+    position: "absolute",
+    bottom: 20,
+    alignSelf: "center",
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(227, 150, 90, 0.95)",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  addPhotosButtonText: {
     color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  addPhotosButtonEmpty: {
+    marginTop: 24,
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#E3965A",
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 25,
+    shadowColor: "#E3965A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   overlayRow: {
     position: "absolute",
