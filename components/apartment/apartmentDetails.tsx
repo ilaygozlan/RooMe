@@ -24,8 +24,7 @@ import API from "../config";
 import { useTheme } from "@/lib/ui/ThemeProvider";
 import { labelToIcon } from "@/utils/labelIcons";
 import { labelTranslations } from "@/utils/labelTranslations";
-import { getDefaultAmenities, type NearbyPlace } from "@/utils/nearbyPlaces";
-import { fetchNearbyPlaces } from "@/utils/nearbyPlaces";
+import { fetchNearbyPlaces, getDefaultAmenities, type NearbyPlace } from "@/utils/nearbyPlaces";
 // ------------------ Types ------------------
 
 type LabelItem = { value?: string } | string;

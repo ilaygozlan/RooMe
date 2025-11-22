@@ -36,6 +36,28 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
   SearchApartments,
   showAll,
 }) => {
+  // Watch translateY to reset expanded state when search bar is hidden
+  React.useEffect(() => {
+    // Check if translateY is an Animated.Value (has addListener method)
+    if (translateY && typeof (translateY as any).addListener === 'function') {
+      let lastValue = 0;
+      const listenerId = (translateY as Animated.Value).addListener(({ value }) => {
+        // When search bar starts hiding (translateY becomes negative), reset expanded state
+        if (value < -30 && lastValue >= -30) {
+          const resetFn = (SearchBar as any).__resetExpanded;
+          if (resetFn) {
+            resetFn();
+          }
+        }
+        lastValue = value;
+      });
+
+      return () => {
+        (translateY as Animated.Value).removeListener(listenerId);
+      };
+    }
+  }, [translateY]);
+
   return (
     <Animated.View
       pointerEvents="box-none"
@@ -58,6 +80,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
         index={index}
         setIndex={setIndex}
         showAllApartments={showAll}
+        onScroll={() => {}}
       />
     </Animated.View>
   );

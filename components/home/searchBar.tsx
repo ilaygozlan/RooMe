@@ -52,6 +52,8 @@ interface SearchBarProps {
   setIndex: (val: boolean) => void;
 
   showAllApartments: () => void;
+  
+  onScroll?: () => void; // Callback when scroll happens to reset expanded state
 }
 
 // ---------- Constants ----------
@@ -92,6 +94,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   index,
   setIndex,
   showAllApartments,
+  onScroll,
 }) => {
   const [expanded, setExpanded] = useState<boolean>(false);
   const [searchInput, setSearchInput] = useState<string>(
@@ -104,15 +107,35 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   const router = useRouter();
   const googlePlacesRef = useRef<GooglePlacesAutocompleteRef | null>(null);
+  const expandedRef = useRef(expanded);
 
   // Enable LayoutAnimation on Android
   if (Platform.OS === "android") {
     UIManager.setLayoutAnimationEnabledExperimental?.(true);
   }
 
+  // Keep ref in sync with state
+  useEffect(() => {
+    expandedRef.current = expanded;
+  }, [expanded]);
+
   useEffect(() => {
     setSearchInput(selectedLocation?.address ?? "");
   }, [expanded, selectedLocation]);
+
+  // Store reset function in module-level variable for SearchHeader to access
+  useEffect(() => {
+    const resetExpanded = () => {
+      if (expandedRef.current) {
+        setExpanded(false);
+      }
+    };
+    // Store reset function globally so SearchHeader can access it
+    (SearchBar as any).__resetExpanded = resetExpanded;
+    return () => {
+      delete (SearchBar as any).__resetExpanded;
+    };
+  }, []);
 
   const toggleExpand = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);

@@ -149,7 +149,7 @@ function computeLayout(
 export default function PhotoCollage({
   images,
   aspectRatio = 1.2,
-  borderRadius = 16,
+  borderRadius = 10,
   gap = 6,
   onImagePress,
 }: PhotoCollageProps) {
