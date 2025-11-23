@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   headerContent: {
     flexDirection: "row-reverse",
     alignItems: "center",
-    justifyContent: "flex-start",
+    justifyContent: "space-between",
     gap: 12,
   },
   headerTitle: {

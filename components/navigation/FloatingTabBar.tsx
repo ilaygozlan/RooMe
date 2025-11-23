@@ -122,12 +122,14 @@ export default function FloatingCenterFabTabBar({
     const isFocused = state.routes[state.index].key === route.key;
     const label = descriptors[route.key].options.title ?? route.name;
     const iconName = icons[route.name] ?? "ellipse";
+    const testID = route.name === "saved" ? "savedApartmentsButton" : undefined;
     return (
       <Pressable
         key={route.key}
         onPress={() => handlePressTab(route.key, route.name, isFocused)}
         style={styles.tabBtn}
         hitSlop={10}
+        testID={testID}
       >
         <Ionicons
           name={iconName}
@@ -220,6 +222,7 @@ export default function FloatingCenterFabTabBar({
         >
           <Pressable
             onPress={handleCenterPress}
+            testID="addApartmentButton"
             style={[
               styles.fab,
               {

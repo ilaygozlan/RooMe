@@ -17,6 +17,7 @@ import {
 } from "@/hooks/homeHooks/useApartmentsSearch";
 
 import UserProfile from "@/components/userProfile"; // ⬅ adjust path if needed
+import MainScreenGuidedTour from "@/components/onboarding/MainScreenGuidedTour";
 
 export type ApartmentProps = { hideIcons?: boolean };
 
@@ -25,6 +26,11 @@ export default function HomeScreen(props: ApartmentProps) {
   const { home, loadHomeFirstPage, loadHomeNextPage, getApartmentsByIds } =
     useApartments();
 
+  // Guided tour state
+  // TODO: later, use AsyncStorage flag (e.g. "hasSeenGuidedTour") to show this only once per user.
+  // For development: always show the tour
+  const [showTour, setShowTour] = useState(false);
+
   // First-load bootstrap (one time)
   const bootRef = useRef(false);
   useEffect(() => {
@@ -32,6 +38,14 @@ export default function HomeScreen(props: ApartmentProps) {
     bootRef.current = true;
     loadHomeFirstPage();
   }, [loadHomeFirstPage]);
+
+  // Show tour after a short delay to ensure UI is ready
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowTour(true);
+    }, 1000); // 1 second delay to ensure all elements are rendered
+    return () => clearTimeout(timer);
+  }, []);
 
   // Base list – source of truth from context ids
   const baseApartments = useMemo(
@@ -136,6 +150,12 @@ export default function HomeScreen(props: ApartmentProps) {
       {/* Details + Profile modals */}
       <DetailsPortal />
       <UserProfilePortal />
+
+      {/* Guided Tour */}
+      <MainScreenGuidedTour
+        visible={showTour}
+        onComplete={() => setShowTour(false)}
+      />
     </View>
   );
 }

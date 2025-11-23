@@ -284,7 +284,11 @@ const RocketSVG = ({ boosted }: { boosted: boolean }) => (
   });
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity 
+      onPress={onPress} 
+      activeOpacity={0.8}
+      testID="boostButton"
+    >
       <Animated.View
         style={[
           styles.container,
