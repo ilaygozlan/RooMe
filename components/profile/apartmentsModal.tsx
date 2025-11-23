@@ -432,10 +432,6 @@ export const ApartmentsModal: React.FC<Props> = ({
                         </View>
                       </View>
                       <View style={styles.statsRow}>
-                        <View style={styles.statItem}>
-                          <MaterialIcons name="favorite" size={14} color="#E3965A" />
-                          <Text style={styles.statText}>{apt.NumOfLikes || 0}</Text>
-                        </View>
                         {apt.ParkingSpace > 0 && (
                           <View style={styles.statItem}>
                             <MaterialIcons name="local-parking" size={14} color="#666" />
@@ -543,6 +539,7 @@ const styles = StyleSheet.create({
   apartmentCard: {
     flexDirection: "row-reverse",
     backgroundColor: "#FFFFFF",
+    padding: 5,
     borderRadius: 16,
     marginBottom: 16,
     overflow: "hidden",
@@ -561,14 +558,16 @@ const styles = StyleSheet.create({
     }),
   },
   imageContainer: {
-    width: 120,
-    height: 120,
+    width: 110,
+    height: 110,
     position: "relative",
+    top: 8,
   },
   image: {
     width: "100%",
     height: "100%",
     resizeMode: "cover",
+    borderRadius: 16,
   },
   placeholderImage: {
     backgroundColor: "#f0f0f0",
