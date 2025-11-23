@@ -1,19 +1,19 @@
-import React, { useState, useMemo } from "react";
-import {
-  View,
-  Text,
-  Modal,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-  StyleSheet,
-  Platform,
-  SafeAreaView,
-  Alert,
-} from "react-native";
+import { type Apartment } from "@/context/ApartmentsContext";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { type Apartment } from "@/context/ApartmentsContext";
+import React, { useMemo, useState } from "react";
+import {
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import EditApartmentModal from "./editApartmentModal";
 
 type Props = {

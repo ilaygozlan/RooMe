@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { GooglePlacesAutocomplete } from "@/components/home/googlePlacesCustomAPI";
 import { type Apartment } from "@/context/ApartmentsContext";
@@ -37,6 +37,7 @@ type Props = {
 const STEP_LABELS = ["סוג דירה", "תמונות", "פרטים"];
 
 export default function EditApartmentModal({ visible, apartment, onClose, onSave }: Props) {
+  const insets = useSafeAreaInsets();
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -332,7 +333,7 @@ export default function EditApartmentModal({ visible, apartment, onClose, onSave
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={modalStyles.container} edges={["top"]}>
+      <View style={[modalStyles.container, { paddingTop: insets.top }]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={{ flex: 1 }}
@@ -381,11 +382,11 @@ export default function EditApartmentModal({ visible, apartment, onClose, onSave
           </View>
 
           {/* Progress Indicator */}
-          <SafeAreaView edges={["bottom"]} style={{ backgroundColor: "#fff" }}>
+          <View style={[modalStyles.progressContainer, { paddingBottom: insets.bottom }]}>
             <ProgressIndicator currentStep={step} totalSteps={3} stepLabels={STEP_LABELS} />
-          </SafeAreaView>
+          </View>
         </KeyboardAvoidingView>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
@@ -449,6 +450,9 @@ const modalStyles = StyleSheet.create({
     color: "#666",
     fontSize: 16,
     fontWeight: "600",
+  },
+  progressContainer: {
+    backgroundColor: "#fff",
   },
 });
 

@@ -23,7 +23,7 @@ import {
     View,
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
@@ -67,6 +67,7 @@ function locationToAddress(loc: string | any): string {
 }
 
 export default function EditApartmentDetailsForm({ visible, apartment, onClose, onSave }: Props) {
+  const insets = useSafeAreaInsets();
   const [isSaving, setIsSaving] = useState(false);
   const [containerWidth, setContainerWidth] = useState<number>(width);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -235,7 +236,7 @@ export default function EditApartmentDetailsForm({ visible, apartment, onClose, 
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={styles.container} edges={["top"]}>
+      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={{ flex: 1 }}
@@ -624,7 +625,7 @@ export default function EditApartmentDetailsForm({ visible, apartment, onClose, 
             <View style={{ height: 100 }} />
           </ScrollView>
         </KeyboardAvoidingView>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }

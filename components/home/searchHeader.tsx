@@ -1,7 +1,7 @@
-import React from "react";
-import { Animated, StyleSheet } from "react-native";
 import SearchBar from "@/components/home/searchBar";
 import type { FiltersJson, LocationSuggest } from "@/hooks/homeHooks/useApartmentsSearch";
+import React from "react";
+import { Animated, StyleSheet } from "react-native";
 
 export type SearchHeaderProps = {
   topInset: number;
