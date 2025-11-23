@@ -8,6 +8,7 @@ import {
   Dimensions,
   StyleSheet,
   Animated,
+  TouchableOpacity,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { FontAwesome5 } from "@expo/vector-icons";
@@ -38,6 +39,24 @@ type RoommateDetails = {
   ["תמונה"]?: string;
   ["תיאור"]?: string;
 };
+  // Helper function to calculate age from birth date
+  const calculateAge = (birthDate?: string): number | null => {
+    if (!birthDate) return null;
+    try {
+      const date = new Date(birthDate);
+      if (isNaN(date.getTime())) return null;
+      const today = new Date();
+      let age = today.getFullYear() - date.getFullYear();
+      const monthDiff = today.getMonth() - date.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) {
+        age--;
+      }
+      return age;
+    } catch {
+      return null;
+    }
+  };
+
   // Parse roommates encoded string to a structured list
   const parseRoommates = (info?: string): RoommateDetails[] => {
     if (!info) return [];
@@ -87,8 +106,7 @@ const { width } = Dimensions.get("window");
 
 // -------- Component --------
 export default function ExtraDetails({ apt }: { apt: Apartment }) {
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const carouselRef = useRef<ScrollView>(null);
+  const [imageErrors, setImageErrors] = React.useState<Record<number, boolean>>({});
 
 
   const renderExtraDetails = () => {
@@ -114,77 +132,101 @@ export default function ExtraDetails({ apt }: { apt: Apartment }) {
         const roommates = parseRoommates(apt.Roommates);
         return (
           <>
-            <View style={styles.detailRow}>
+     {/*        <View style={styles.detailRow}>
               <FontAwesome5 name="users" size={16} color="#E3965A" />
               <Text style={styles.detail}>
                 מס' שותפים: {apt.Shared_NumberOfRoommates}
               </Text>
-            </View>
+            </View> */}
 
             {roommates.length > 0 && (
-              <View>
-                <ScrollView
-                  horizontal
-                  pagingEnabled
-                  showsHorizontalScrollIndicator={false}
-                  ref={carouselRef}
-                  inverted
-                  onScroll={Animated.event(
-                    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-                    { useNativeDriver: false }
-                  )}
-                  scrollEventThrottle={16}
-                >
-                  {roommates.map((rm, index) => (
-                    <View key={index} style={styles.roommateCard}>
-                      {rm["תמונה"] && (
-                        <Image
-                          source={{ uri: rm["תמונה"] }}
-                          style={styles.roommateImage}
-                          resizeMode="cover"
-                        />
-                      )}
-                      <Text style={styles.roommateHeader}>
-                        🧑‍🤝‍🧑 שותף {index + 1}
-                      </Text>
-                      {Object.entries(rm).map(
-                        ([label, value]) =>
-                          label !== "תמונה" && (
-                            <Text key={label} style={styles.roommateDetail}>
-                              • {label}: {value}
-                            </Text>
-                          )
-                      )}
-                    </View>
-                  ))}
-                </ScrollView>
-
-                <View style={styles.paginationContainer}>
-                  {roommates.map((_, i) => {
-                    const inputRange = [(i - 1) * width, i * width, (i + 1) * width];
-                    const dotWidth = scrollX.interpolate({
-                      inputRange,
-                      outputRange: [8, 16, 8],
-                      extrapolate: "clamp",
-                    });
-                    const dotColor = scrollX.interpolate({
-                      inputRange,
-                      outputRange: ["#ccc", "#E3965A", "#ccc"],
-                      extrapolate: "clamp",
-                    });
-
+              <View style={styles.roommatesContainer}>
+                <View style={styles.roommatesHeader}>
+                  <FontAwesome5 name="user-friends" size={18} color="#E3965A" />
+                  <Text style={styles.roommatesTitle}>
+                    שותפים בדירה 
+                  </Text>
+                </View>
+                
+                <View style={styles.roommatesList}>
+                  {roommates.map((rm, index) => {
+                    const age = calculateAge(rm["תאריך לידה"]);
+                    // Use mock photo if no image provided - using different avatars for variety
+                    // Pravatar provides nice placeholder avatars
+                    const imageUri = `https://i.pravatar.cc/300?img=${index + 12}`;  //rm["תמונה"] ||
+                    const imageError = imageErrors[index];
+                    
                     return (
-                      <Animated.View
-                        key={i}
-                        style={[
-                          styles.dot,
-                          {
-                            width: dotWidth as unknown as number,
-                            // Animated color is fine at runtime; TS needs a cast for style type
-                            backgroundColor: dotColor as unknown as string,
-                          },
-                        ]}
-                      />
+                      <View key={index} style={styles.roommateCard}>
+                        {/* Profile Image */}
+                        <View style={styles.imageWrapper}>
+                          {!imageError ? (
+                            <Image
+                              source={{ uri: imageUri }}
+                              style={styles.roommateImage}
+                              resizeMode="cover"
+                              onError={() => {
+                                setImageErrors(prev => ({ ...prev, [index]: true }));
+                              }}
+                            />
+                          ) : (
+                            <View style={styles.placeholderImageContainer}>
+                              <FontAwesome5 name="user" size={32} color="#E3965A" />
+                            </View>
+                          )}
+                          <View style={styles.imageBadge}>
+                            <Text style={styles.imageBadgeText}>{index + 1}</Text>
+                          </View>
+                        </View>
+
+                        {/* Content Section */}
+                        <View style={styles.cardContent}>
+                          {/* Name and Basic Info */}
+                          <View style={styles.nameSection}>
+                            {rm["שם"] && (
+                              <Text style={styles.roommateName} numberOfLines={1}>
+                                {rm["שם"]}
+                              </Text>
+                            )}
+                            <View style={styles.quickInfoRow}>
+                              {rm["מגדר"] && (
+                                <View style={styles.quickInfoItem}>
+                                  <FontAwesome5 
+                                    name={rm["מגדר"] === "זכר" ? "mars" : rm["מגדר"] === "נקבה" ? "venus" : "genderless"} 
+                                    size={12} 
+                                    color="#6C757D" 
+                                    style={{ marginLeft: 4 }}
+                                  />
+                                  <Text style={styles.quickInfoText}>{rm["מגדר"]}</Text>
+                                </View>
+                              )}
+                              {age !== null && (
+                                <View style={styles.quickInfoItem}>
+                                  <MaterialIcons name="cake" size={14} color="#6C757D" style={{ marginLeft: 4 }} />
+                                  <Text style={styles.quickInfoText}>{age} שנים</Text>
+                                </View>
+                              )}
+                            </View>
+                          </View>
+
+                          {/* Job/Occupation */}
+                          {rm["עיסוק"] && (
+                            <View style={styles.jobSection}>
+                              <MaterialIcons name="work-outline" size={16} color="#E3965A" style={{ marginLeft: 6 }} />
+                              <Text style={styles.jobText} numberOfLines={1}>
+                                {rm["עיסוק"]}
+                              </Text>
+                            </View>
+                          )}
+
+                          {/* Description */}
+                          {rm["תיאור"] && (
+                            <Text style={styles.descriptionText} numberOfLines={2}>
+                              {rm["תיאור"]}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
                     );
                   })}
                 </View>
@@ -243,47 +285,133 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     textAlign: "right",
   },
+  roommatesContainer: {
+    marginTop: 16,
+  },
+  roommatesHeader: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  roommatesTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#2C3E50",
+    marginRight: 8,
+  },
+  roommatesList: {
+    // gap handled by marginBottom on cards
+  },
   roommateCard: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 15,
-    marginHorizontal: 10,
-    alignItems: "center",
-    marginTop: 20,
-    width: width - 60,
-    elevation: 3,
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: "row-reverse",
+    alignItems: "flex-start",
+    marginBottom: 12,
+    elevation: 2,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
   },
-  roommateHeader: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#E3965A",
-    marginBottom: 10,
-  },
-    paginationContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 10,
-  },
-  roommateDetail: {
-    fontSize: 14,
-    color: "#555",
-    marginBottom: 4,
-    textAlign: "right",
-    alignSelf: "stretch",
+  imageWrapper: {
+    position: "relative",
+    marginLeft: 16,
   },
   roommateImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 15,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: "#F8F9FA",
+    backgroundColor: "#F8F9FA",
   },
-  dot: {
-    height: 8,
-    borderRadius: 4,
-    marginHorizontal: 4,
+  placeholderImageContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#F8F9FA",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#E9ECEF",
+  },
+  imageBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    backgroundColor: "#E3965A",
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#fff",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  imageBadgeText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  cardContent: {
+    flex: 1,
+    justifyContent: "flex-start",
+  },
+  nameSection: {
+    marginBottom: 8,
+  },
+  roommateName: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#2C3E50",
+    marginBottom: 6,
+    textAlign: "right",
+  },
+  quickInfoRow: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+  },
+  quickInfoItem: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    marginLeft: 12,
+  },
+  quickInfoText: {
+    fontSize: 13,
+    color: "#6C757D",
+    fontWeight: "500",
+  },
+  jobSection: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    backgroundColor: "#F8F9FA",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 8,
+    alignSelf: "flex-end",
+  },
+  jobText: {
+    fontSize: 13,
+    color: "#495057",
+    fontWeight: "500",
+    maxWidth: 150,
+  },
+  descriptionText: {
+    fontSize: 13,
+    color: "#6C757D",
+    lineHeight: 18,
+    textAlign: "right",
+    marginTop: 4,
   },
 });
