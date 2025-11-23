@@ -30,32 +30,9 @@ import { fetchNearbyPlaces, getDefaultAmenities, type NearbyPlace } from "@/util
 
 type LabelItem = { value?: string } | string;
 
-export type Apartment = {
-  ApartmentID: number;
-  Creator_ID: number;
-  Creator_FullName: string;
-  Creator_ProfilePicture: string;
-  Images: string[];
-  ApartmentType: 0 | 1 | 2; // 0=rental, 1=shared, 2=sublet
-  Location: string;
-  Price: number;
-  Description: string;
-  AmountOfRooms: number;
-  AllowPet: boolean;
-  AllowSmoking: boolean;
-  ParkingSpace: number;
-  EntryDate: string;
-  ExitDate: string | null;
-  Rental_ContractLength: number | null;
-  Rental_ExtensionPossible: boolean;
-  Shared_NumberOfRoommates: number | null;
-  Roommates: string;
-  Sublet_CanCancelWithoutPenalty: boolean;
-  Sublet_IsWholeProperty: boolean;
-  LabelsJson: string;
-  NumOfLikes: number;
-  IsLikedByUser: boolean;
-};
+import type { Apartment } from "@/types/database";
+
+export type { Apartment };
 
 type Props = {
   apt: Apartment;

@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import type { Friend } from "@/types/database";
 
-export type Friend = {
-  id: number | string;
-  fullName: string;
-  username?: string;
-  profilePicture?: string;
-};
+export type { Friend };
 
 export function useFriends(API: string, userId?: number | string) {
   const [friends, setFriends] = useState<Friend[]>([]);

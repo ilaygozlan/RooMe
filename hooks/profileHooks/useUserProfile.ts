@@ -1,18 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import type { UserProfile } from "@/types/database";
 
-export type UserProfile = {
-  id?: number | string;
-  fullName: string;
-  email: string;
-  phoneNumber?: string;
-  profilePicture?: string;
-  gender?: "M" | "F" | "O" | string;
-  birthDate?: string | Date;
-  ownPet?: boolean;
-  smoke?: boolean;
-  jobStatus?: string;
-  token?: string;
-};
+export type { UserProfile };
 
 // ---------- MOCK DATA (קל למחיקה) ----------
 const MOCK_PROFILE: UserProfile = {

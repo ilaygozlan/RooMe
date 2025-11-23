@@ -9,42 +9,12 @@ import React, {
 } from "react";
 
 // ---------- Types ----------
-export type Apartment = {
-  ApartmentID: number;
-  Creator_ID: number;
-  Creator_FullName: string;
-  Creator_ProfilePicture: string;
-  Images: string[];
-  ApartmentType: 0 | 1 | 2; // 0=rental, 1=shared, 2=sublet
-  Location: string; // stringified JSON { address: string }
-  Price: number;
-  Description: string;
-  AmountOfRooms: number;
-  AllowPet: boolean;
-  AllowSmoking: boolean;
-  ParkingSpace: number;
-  EntryDate: string;
-  ExitDate: string | null;
-  Rental_ContractLength: number | null;
-  Rental_ExtensionPossible: boolean;
-  Shared_NumberOfRoommates: number | null;
-  Roommates: string; // pipe-separated string
-  Sublet_CanCancelWithoutPenalty: boolean;
-  Sublet_IsWholeProperty: boolean;
-  LabelsJson: string; // stringified array of { value: string }
-  NumOfLikes: number;
-  IsLikedByUser: boolean;
-};
+// Import unified types but keep existing shape for backward compatibility
+import type { Apartment as ApartmentBase, ApartmentFilters as FiltersBase } from "@/types/database";
 
-export type Filters = {
-  minPrice?: number;
-  maxPrice?: number;
-  entryDate?: string; // ISO
-  apartmentType?: number; // 0=rent,1=roommates,2=sublet
-  genders?: string[];
-  features?: string[]; // ["balcony","elevator"]
-  queryText?: string; // free-text
-};
+// Re-export with existing names for backward compatibility
+export type Apartment = ApartmentBase;
+export type Filters = FiltersBase;
 
 export type MapBounds = {
   north: number;

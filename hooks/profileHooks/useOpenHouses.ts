@@ -1,15 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import type { OpenHouse } from "@/types/database";
 
-export type OpenHouse = {
-  id: number;
-  apartmentId: number;
-  location: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  amountOfPeoples: number;
-  totalRegistrations: number;
-};
+export type { OpenHouse };
 
 export function useOpenHouses(API: string, userId?: number | string) {
   const [openHouses, setOpenHouses] = useState<OpenHouse[]>([]);
