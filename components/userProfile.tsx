@@ -1,64 +1,20 @@
-// UserProfile.tsx
-import React, { useState, useEffect } from "react";
+// UserProfileScreen.jsx
+import React, { useMemo } from "react";
 import {
-  Text,
-  TouchableOpacity,
   View,
-  StyleSheet,
-  Modal,
+  Text,
   Image,
+  StyleSheet,
   ScrollView,
-  ActivityIndicator,
+  TouchableOpacity,
+  FlatList,
 } from "react-native";
-import { FontAwesome5, Feather } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
-/* import { userInfoContext } from "./contex/userInfoContext";
-import UserOwnedApartmentsGrid from "./UserOwnedApartmentsGrid";
-import LogoutButton from "./components/LogoutButton";
-import API from "../config"; */
+import { Ionicons } from "@expo/vector-icons"; // make sure expo installed @expo/vector-icons
+import { SafeAreaView } from "react-native-safe-area-context";
+import ApartmentCard from "@/components/apartment/apartmentCard";
 
-// ---------- Theme (Roome-ish) ----------
-const COLORS = {
-  primary: "#2661A1", // Roome blue
-  accent: "#FF7A00", // Roome orange
-  background: "#F4F6FB",
-  cardBg: "#FFFFFF",
-  textMain: "#111827",
-  textMuted: "#6B7280",
-  border: "#E5E7EB",
-  chipBg: "#E0ECF8",
-  chipText: "#1E3A8A",
-};
-
-// ---------- Types ----------
-interface UserProfileData {
-  id: number;
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-  gender: string; // "M" | "F" | etc.
-  birthDate: string;
-  ownPet: boolean;
-  smoke: boolean;
-  jobStatus: string;
-  profilePicture?: string | null;
-}
-
-interface Friend {
-  id: number;
-  fullName: string;
-  profilePicture?: string | null;
-}
-
-interface UserProfileProps {
-  userId?: number | string;
-  onClose?: () => void;
-  onAddFriend?: (user: UserProfileData) => void;
-  onRemoveFriend?: (userId: number | string) => void;
-}
-
-// ---------- MOCK DATA ----------
-const MOCK_USER: UserProfileData = {
+// ===== Example data =====
+const exampleUser = {
   id: 1,
   fullName: "עילאי גוזלן",
   email: "ilay@example.com",
@@ -71,684 +27,649 @@ const MOCK_USER: UserProfileData = {
   profilePicture: "https://www.w3schools.com/howto/img_avatar.png",
 };
 
-const MOCK_FRIENDS: Friend[] = [
-  {
-    id: 2,
-    fullName: "נועה לוי",
-    profilePicture: "https://www.w3schools.com/howto/img_avatar2.png",
-  },
-  {
-    id: 3,
-    fullName: "דניאל כהן",
-    profilePicture: "https://www.w3schools.com/howto/img_avatar.png",
-  },
+const exampleFriends = [
+  { id: 2, name: "נועה לוי", avatar: "https://i.pravatar.cc/100?img=5" },
+  { id: 3, name: "דניאל כהן", avatar: "https://i.pravatar.cc/100?img=10" },
+  { id: 4, name: "יואב רז", avatar: "https://i.pravatar.cc/100?img=15" },
 ];
 
-const UserProfile: React.FC<UserProfileProps> = (props) => {
-  /*   const { loginUserId } = useContext(userInfoContext) as {
-    loginUserId: number | string;
-  }; */
-  const loginUserId = 1;
-  const API = ""; // אם נשאר ריק – נשתמש ב-MOCK
-
-  const { userId } = useLocalSearchParams<{ userId?: string }>();
-  const finalUserId: number | string | undefined =
-    props.userId ?? (userId ? Number(userId) || userId : undefined);
-
-  const isMyProfile = finalUserId == loginUserId;
-
-  const router = useRouter();
-
-  const [showFriendProfile, setFriendProfile] = useState(false);
-  const [selectedFriendId, setFriendId] = useState<number | string | null>(
-    null
-  );
-  const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  const [modalVisible, setModalVisible] = useState(false);
-  const [updatedProfile, setUpdatedProfile] = useState<
-    Partial<UserProfileData>
-  >({});
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const [isFriend, setIsFriend] = useState(false);
-
-  // --- Load user profile (with MOCK fallback) ---
-  useEffect(() => {
-    if (!finalUserId) return;
-
-    if (!API) {
-      const mockUser: UserProfileData = {
-        ...MOCK_USER,
-        id: Number(finalUserId) || 1,
-      };
-      setUserProfile(mockUser);
-      setUpdatedProfile(mockUser);
-      setLoading(false);
-      return;
-    }
-
-    fetch(API + "User/GetUserById/" + finalUserId)
-      .then((res) => {
-        if (!res.ok) throw new Error("שגיאה בטעינת פרופיל");
-        return res.json();
-      })
-      .then((data: UserProfileData) => {
-        setUserProfile(data);
-        setUpdatedProfile(data);
-        setLoading(false);
-      })
-      .catch((err: Error) => {
-        setError(err);
-        setLoading(false);
-      });
-  }, [API, finalUserId]);
-
-  // --- Load friends (with MOCK fallback) ---
-  useEffect(() => {
-    if (!finalUserId) return;
-
-    if (!API) {
-      setFriends(MOCK_FRIENDS);
-      setIsFriend(MOCK_FRIENDS.some((f) => f.id === loginUserId));
-      return;
-    }
-
-    fetch(API + "User/GetUserFriends/" + finalUserId)
-      .then((res) => res.json())
-      .then((data: Friend[]) => {
-        setFriends(data);
-        setIsFriend(data.some((f) => f.id === loginUserId));
-      })
-      .catch((err) => console.error("שגיאה בטעינת חברים", err));
-  }, [API, finalUserId, loginUserId]);
-
-  const handleFriendToggle = () => {
-    if (!finalUserId) return;
-
-    if (!API) {
-      setIsFriend((prev) => !prev);
-      return;
-    }
-
-    if (isFriend) {
-      fetch(`${API}User/RemoveFriend/${loginUserId}/${finalUserId}`, {
-        method: "DELETE",
-      })
-        .then(() => {
-          setIsFriend(false);
-          if (props.onRemoveFriend) {
-            props.onRemoveFriend(finalUserId);
-          }
-        })
-        .catch((err) => console.error("שגיאה בהסרת חבר", err));
-    } else {
-      fetch(`${API}User/AddFriend`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userID1: loginUserId,
-          userID2: finalUserId,
-        }),
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error("שגיאה בהוספת חבר");
-          return res.text();
-        })
-        .then(() => {
-          setIsFriend(true);
-          if (props.onAddFriend && userProfile) {
-            props.onAddFriend(userProfile);
-          }
-        })
-        .catch((err) => console.error(err));
-    }
-  };
-
-  const handleSave = async () => {
-    const updatedUser = { ...updatedProfile, id: loginUserId };
-
-    if (!API) {
-      console.log("MOCK: profile updated", updatedUser);
-      setModalVisible(false);
-      return;
-    }
-
-    try {
-      const res = await fetch(API + "User/UpdateUserDetails", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedUser),
-      });
-
-      if (!res.ok) throw new Error("Failed to update profile");
-
-      console.log("✔️ profile updated");
-      setModalVisible(false);
-    } catch (err) {
-      console.error("❌", err);
-    }
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
-  }
-
-  if (error || !userProfile) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.errorText}>שגיאה: {error?.message}</Text>
-      </View>
-    );
-  }
-
-  const headerTitle = isMyProfile
-    ? "החברים שלי"
-    : userProfile?.fullName
-    ? `החברים של ${userProfile.fullName}`
-    : "החברים";
-
-  const genderLabel = userProfile.gender === "F" ? "נקבה" : "זכר";
-  const petLabel = userProfile.ownPet ? "בעל חיית מחמד" : "אין חיית מחמד";
-  const smokeLabel = userProfile.smoke ? "מעשן" : "לא מעשן";
-
-  return (
-    <View style={styles.screen}>
-      {/* Blue top background */}
-      <View style={styles.headerBackground} />
-
-      {/* Top bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          style={styles.topBarBackButton}
-          onPress={() => {
-            if (props.onClose) props.onClose();
-            else router.back();
-          }}
-        >
-          <Feather name="arrow-right" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.topBarTitle}>
-          {isMyProfile ? "הפרופיל שלי" : "פרופיל משתמש"}
-        </Text>
-      </View>
-
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Profile card */}
-        <View style={styles.profileCard}>
-          {/* Avatar */}
-          <View style={styles.avatarWrapper}>
-            <Image
-              source={
-                userProfile.profilePicture
-                  ? { uri: userProfile.profilePicture }
-                  : { uri: "https://www.w3schools.com/howto/img_avatar.png" }
-              }
-              style={styles.profileImage}
-            />
-          </View>
-
-          {/* Name + job */}
-          <Text style={styles.profileName}>{userProfile.fullName}</Text>
-          {!!userProfile.jobStatus && (
-            <Text style={styles.profileJob}>{userProfile.jobStatus}</Text>
-          )}
-
-          {/* Lifestyle chips */}
-          <View style={styles.chipsRow}>
-            <View style={styles.chip}>
-              <FontAwesome5 name="venus-mars" size={12} color={COLORS.chipText} />
-              <Text style={styles.chipText}>{genderLabel}</Text>
-            </View>
-            <View style={styles.chip}>
-              <FontAwesome5 name="dog" size={12} color={COLORS.chipText} />
-              <Text style={styles.chipText}>{petLabel}</Text>
-            </View>
-            <View style={styles.chip}>
-              <FontAwesome5 name="smoking" size={12} color={COLORS.chipText} />
-              <Text style={styles.chipText}>{smokeLabel}</Text>
-            </View>
-          </View>
-
-          {/* Action buttons */}
-          {!isMyProfile && (
-            <View style={styles.actionsRow}>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.friendButton]}
-                onPress={handleFriendToggle}
-              >
-                <FontAwesome5
-                  name={isFriend ? "user-minus" : "user-plus"}
-                  size={14}
-                  color="#FFFFFF"
-                />
-                <Text style={styles.actionButtonText}>
-                  {isFriend ? "הסר מחברים" : "הוסף לחברים"}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.actionButton, styles.chatButton]}
-                onPress={() =>
-                  router.push({
-                    pathname: "ChatRoom",
-                    params: { recipientId: finalUserId },
-                  })
-                }
-              >
-                <FontAwesome5 name="comments" size={14} color="#FFFFFF" />
-                <Text style={styles.actionButtonText}>הודעה</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        {/* Info section */}
-        <View style={styles.infoSection}>
-          <Text style={styles.sectionTitle}>פרטי קשר</Text>
-          <View style={styles.infoGrid}>
-            <InfoCard
-              icon={
-                <FontAwesome5 name="envelope" size={16} color={COLORS.primary} />
-              }
-              label="אימייל"
-              value={userProfile.email}
-            />
-            <InfoCard
-              icon={
-                <FontAwesome5 name="phone" size={16} color={COLORS.primary} />
-              }
-              label="טלפון"
-              value={userProfile.phoneNumber}
-            />
-            <InfoCard
-              icon={
-                <FontAwesome5
-                  name="birthday-cake"
-                  size={16}
-                  color={COLORS.primary}
-                />
-              }
-              label="תאריך לידה"
-              value={new Date(userProfile.birthDate).toLocaleDateString(
-                "he-IL"
-              )}
-            />
-          </View>
-        </View>
-
-        {/* Friends */}
-        <View style={styles.friendsSection}>
-          <View style={styles.friendsHeaderRow}>
-            <Text style={styles.sectionTitle}>{headerTitle}</Text>
-            {friends.length > 0 && (
-              <Text style={styles.friendsCount}>{friends.length} חברים</Text>
-            )}
-          </View>
-
-          {friends.length === 0 ? (
-            <View style={styles.emptyFriendsCard}>
-              <Text style={styles.emptyFriendsTitle}>אין חברים כרגע</Text>
-              <Text style={styles.emptyFriendsText}>
-                ברגע שתוסיפו חברים, הם יופיעו כאן 💙
-              </Text>
-            </View>
-          ) : (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.friendsScrollContent}
-            >
-              {friends.map((friend) => (
-                <TouchableOpacity
-                  key={friend.id}
-                  style={styles.friendCard}
-                  onPress={() => {
-                    setFriendProfile(true);
-                    setFriendId(friend.id);
-                  }}
-                >
-                  <Image
-                    source={{
-                      uri:
-                        friend.profilePicture ||
-                        "https://www.w3schools.com/howto/img_avatar.png",
-                    }}
-                    style={styles.friendCardImage}
-                  />
-                  <Text style={styles.friendCardName}>{friend.fullName}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
-        </View>
-
-        {/* Friend profile modal (same component, recursive) */}
-        {showFriendProfile && selectedFriendId && (
-          <Modal
-            visible={true}
-            animationType="slide"
-            onRequestClose={() => setFriendProfile(false)}
-          >
-            <UserProfile
-              userId={selectedFriendId}
-              onClose={() => setFriendProfile(false)}
-              onRemoveFriend={props.onRemoveFriend}
-              onAddFriend={props.onAddFriend}
-            />
-          </Modal>
-        )}
-
-        {/* Apartments + Logout are kept commented as in original logic */}
-        {/* <View style={styles.apartmentsWrapper}>
-          <UserOwnedApartmentsGrid
-            userId={finalUserId}
-            isMyProfile={false}
-            loginUserId={loginUserId}
-          />
-        </View>
-
-        {isMyProfile && (
-          <View style={styles.logoutContainer}>
-            <LogoutButton />
-          </View>
-        )} */}
-      </ScrollView>
-    </View>
-  );
-};
-
-interface InfoCardProps {
-  icon: React.ReactNode;
-  label: string;
-  value?: string | number | null;
-}
-
-const InfoCard: React.FC<InfoCardProps> = ({ icon, label, value }) => {
-  if (value === undefined || value === null || value === "") return null;
-
-  return (
-    <View style={styles.infoItem}>
-      <View style={styles.infoIconWrapper}>{icon}</View>
-      <View style={styles.infoTextWrapper}>
-        <Text style={styles.infoLabel}>{label}</Text>
-        <Text style={styles.infoText}>{value}</Text>
-      </View>
-    </View>
-  );
-};
-
-// ---------- Styles ----------
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: COLORS.background,
+const exampleApartments = [  {
+    ApartmentID: 108,
+    Creator_ID: 8,
+    Creator_FullName: "ilay gozlan",
+    Creator_ProfilePicture: "https://i.pravatar.cc/150?img=41",
+    Images: ["https://thumbs.dreamstime.com/b/modern-house-interior-exterior-design-46517595.jpg","https://picsum.photos/800/400?random=16","https://picsum.photos/800/400?random=1","https://picsum.photos/800/400?random=2","https://picsum.photos/800/400?random=31","https://picsum.photos/800/400?random=32"],
+    ApartmentType: 0,
+    Location: "{\"address\": \"קינג ג'ורג' 80, Tel Aviv\", \"latitude\": 32.073, \"longitude\": 34.777}",
+    Price: 8400,
+    Description: "Penthouse, skyline views, huge terrace, elevator & parking.",
+    AmountOfRooms: 4, AllowPet: false, AllowSmoking: false, ParkingSpace: 1,
+    EntryDate: "2025-12-05T00:00:00", ExitDate: null,
+    Rental_ContractLength: 24, Rental_ExtensionPossible: true,
+    Shared_NumberOfRoommates: null, Roommates: "",
+    Sublet_CanCancelWithoutPenalty: false, Sublet_IsWholeProperty: false,
+    LabelsJson: '[{"value":"terrace"},{"value":"elevator"},{"value":"parking"},{"value":"dishwasher"}]',
+    NumOfLikes: 20, IsLikedByUser: true,
   },
-  container: {
-    flex: 1,
+  {
+    ApartmentID: 109,
+    Creator_ID: 9,
+    Creator_FullName: "ilay gozlan",
+    Creator_ProfilePicture: "https://i.pravatar.cc/150?img=41",
+    Images: ["https://picsum.photos/800/400?random=17","https://picsum.photos/800/400?random=18"],
+    ApartmentType: 1,
+    Location: "{\"address\": \"Bar Ilan 5, Ramat Gan\", \"latitude\": 32.082, \"longitude\": 34.826}",
+    Price: 4100,
+    Description: "Student-friendly shared flat, bills included, near campus and transit.",
+    AmountOfRooms: 3, AllowPet: false, AllowSmoking: true, ParkingSpace: 0,
+    EntryDate: "2025-11-22T00:00:00", ExitDate: null,
+    Rental_ContractLength: 12, Rental_ExtensionPossible: true,
+    Shared_NumberOfRoommates: 2,
+    Roommates: "Name:Tom|Gender:Male|Job:Student|BirthDate:2001-02-02|Image:https://i.pravatar.cc/100?img=52||Name:Noya|Gender:Female|Job:Student|BirthDate:2002-07-09|Image:https://i.pravatar.cc/100?img=53",
+    LabelsJson: '[{"value":"wifi"},{"value":"balcony"},{"value":"ac"}]',
+    Sublet_CanCancelWithoutPenalty: false, Sublet_IsWholeProperty: false,
+    NumOfLikes: 9, IsLikedByUser: false,
+  },
+  ];
+
+// ===== Helper: calculate age =====
+const getAgeFromBirthDate = (birthDateString) => {
+  if (!birthDateString) return null;
+  const birth = new Date(birthDateString);
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const m = now.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+};
+
+// ===== Generic Section Card (for nice grouping) =====
+const SectionCard = ({ title, rightLabel, iconName, children }) => {
+  return (
+    <View style={styles.sectionCard}>
+      <View style={styles.sectionHeaderRow}>
+        <View style={styles.sectionTitleRow}>
+          {iconName && (
+            <Ionicons
+              name={iconName}
+              size={18}
+              style={styles.sectionTitleIcon}
+            />
+          )}
+          <Text style={styles.sectionTitle}>{title}</Text>
+        </View>
+        {rightLabel ? (
+          <Text style={styles.sectionRightLabel}>{rightLabel}</Text>
+        ) : null}
+      </View>
+      {children}
+    </View>
+  );
+};
+
+// ===== Friend small avatar =====
+const FriendAvatar = ({ friend }) => {
+  return (
+    <View style={styles.friendContainer}>
+      <Image source={{ uri: friend.avatar }} style={styles.friendAvatar} />
+      <Text style={styles.friendName} numberOfLines={1}>
+        {friend.name}
+      </Text>
+    </View>
+  );
+};
+
+
+// ===== Profile Header (shared for my profile / other profile) =====
+const ProfileHeader = ({ user, isCurrentUser }) => {
+  const age = useMemo(
+    () => getAgeFromBirthDate(user.birthDate),
+    [user.birthDate]
+  );
+
+  const genderLabel = user.gender === "M" ? "גבר" : "אישה";
+
+  return (
+    <View style={styles.headerContainer}>
+      {/* Background "card" / elevated area */}
+      <View style={styles.headerCard}>
+        <View style={styles.headerTopRow}>
+          <Image
+            source={{ uri: user.profilePicture }}
+            style={styles.profilePicture}
+          />
+
+          <View style={styles.headerTextArea}>
+            <Text style={styles.userName}>{user.fullName}</Text>
+            <Text style={styles.userJob} numberOfLines={2}>
+              {user.jobStatus}
+            </Text>
+
+            <View style={styles.tagRow}>
+              {age != null && (
+                <View style={styles.tag}>
+                  <Ionicons name="calendar-outline" size={14} />
+                  <Text style={styles.tagText}>{age} שנים</Text>
+                </View>
+              )}
+              <View style={styles.tag}>
+                <Ionicons name="person-outline" size={14} />
+                <Text style={styles.tagText}>{genderLabel}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Lifestyle tags */}
+        <View style={styles.lifestyleRow}>
+          <View
+            style={[
+              styles.lifestyleTag,
+              user.ownPet && styles.lifestyleTagActive,
+            ]}
+          >
+            <Ionicons name="paw-outline" size={16} />
+            <Text style={styles.lifestyleText}>
+              {user.ownPet ? "מגדל חיות" : "ללא חיות"}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.lifestyleTag,
+              !user.smoke && styles.lifestyleTagActive,
+            ]}
+          >
+            <Ionicons name="flame-outline" size={16} />
+            <Text style={styles.lifestyleText}>
+              {user.smoke ? "מעשן" : "לא מעשן"}
+            </Text>
+          </View>
+        </View>
+
+        {/* Contact info */}
+        <View style={styles.contactRow}>
+          <View style={styles.contactItem}>
+            <Ionicons name="call-outline" size={16} style={styles.iconSoft} />
+            <Text style={styles.contactText}>{user.phoneNumber}</Text>
+          </View>
+          <View style={styles.contactItem}>
+            <Ionicons name="mail-outline" size={16} style={styles.iconSoft} />
+            <Text style={styles.contactText} numberOfLines={1}>
+              {user.email}
+            </Text>
+          </View>
+        </View>
+
+        {/* Pill at top-right to show if this is "my profile" or another user */}
+        <View style={styles.profileTypeBadgeWrapper}>
+          <View style={styles.profileTypeBadge}>
+            <Ionicons
+              name={isCurrentUser ? "person-circle-outline" : "eye-outline"}
+              size={16}
+              style={styles.iconSoft}
+            />
+            <Text style={styles.profileTypeText}>
+              {isCurrentUser ? "הפרופיל שלי" : "פרופיל משתמש"}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+// ===== Floating action bar (different for my / other profile) =====
+const ProfileActionBar = ({ isCurrentUser }) => {
+  if (isCurrentUser) {
+    return (
+      <View style={styles.actionBar}>
+        <TouchableOpacity style={[styles.actionButton, styles.actionPrimary]}>
+          <Ionicons name="pencil-outline" size={18} />
+          <Text style={styles.actionPrimaryText}>עריכת פרופיל</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.actionButton}>
+          <Ionicons name="add-circle-outline" size={18} />
+          <Text style={styles.actionText}>הוספת דירה</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Actions when viewing someone else’s profile
+  return (
+    <View style={styles.actionBar}>
+      <TouchableOpacity style={[styles.actionButton, styles.actionPrimary]}>
+        <Ionicons name="chatbubble-ellipses-outline" size={18} />
+        <Text style={styles.actionPrimaryText}>שליחת הודעה</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.actionButton}>
+        <Ionicons name="heart-outline" size={18} />
+        <Text style={styles.actionText}>שמירה במועדפים</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+// ===== Main screen =====
+const UserProfileScreen = ({
+  user = exampleUser,
+  friends = exampleFriends,
+  apartments = exampleApartments,
+  isCurrentUser = false,
+}) => {
+  return (
+    <SafeAreaView>
+      <View style={styles.root}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <ProfileHeader user={user} isCurrentUser={isCurrentUser} />
+
+          {/* Stats section */}
+          <SectionCard
+            title="סקירה מהירה"
+            iconName="stats-chart-outline"
+            rightLabel={
+              isCurrentUser ? "איך אחרים רואים אותך" : "מידע על המשתמש"
+            }
+          >
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{friends.length}</Text>
+                <Text style={styles.statLabel}>חברים</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{apartments.length}</Text>
+                <Text style={styles.statLabel}>דירות שפורסמו</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>4.8</Text>
+                <Text style={styles.statLabel}>דירוג משתמש</Text>
+              </View>
+            </View>
+          </SectionCard>
+
+          {/* Friends section */}
+          <SectionCard
+            title="חברים משותפים / חברים"
+            iconName="people-outline"
+            rightLabel={
+              friends.length ? `${friends.length} חברים` : "אין חברים להצגה"
+            }
+          >
+            {friends.length ? (
+              <FlatList
+                data={friends}
+                keyExtractor={(item) => String(item.id)}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.friendsList}
+                inverted // for RTL visual order
+                renderItem={({ item }) => <FriendAvatar friend={item} />}
+              />
+            ) : (
+              <Text style={styles.emptyText}>
+                עדיין אין חברים להצגה עבור משתמש זה.
+              </Text>
+            )}
+          </SectionCard>
+
+          {/* Apartments section */}
+          <SectionCard
+            title={isCurrentUser ? "הדירות שפרסמת" : "דירות שהמשתמש פרסם"}
+            iconName="home-outline"
+            rightLabel={
+              apartments.length ? `${apartments.length} דירות` : undefined
+            }
+          >
+            {apartments.length ? (
+              <View style={styles.apartmentsList}>
+                {apartments.map((apt) => (
+                  <ApartmentCard key={apt.id} apartment={apt} />
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.emptyText}>
+                עדיין לא פורסמו דירות על ידי משתמש זה.
+              </Text>
+            )}
+          </SectionCard>
+
+          {/* Extra padding at bottom so it won't hide under the action bar */}
+          <View style={{ height: 90 }} />
+        </ScrollView>
+
+        {/* Floating bottom action bar */}
+        <ProfileActionBar isCurrentUser={isCurrentUser} />
+      </View>
+    </SafeAreaView>
+  );
+};
+
+export default UserProfileScreen;
+
+// ===== Styles =====
+const styles = StyleSheet.create({
+  root: {
+    backgroundColor: "#F5F7FB",
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 32,
   },
-  headerBackground: {
-    position: "absolute",
-    top: 0,
-    width: "100%",
-    height: 210,
-    backgroundColor: COLORS.primary,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
+
+  // Header
+  headerContainer: {
+    marginBottom: 16,
   },
-  topBar: {
-    marginTop: 40,
-    paddingHorizontal: 20,
-    flexDirection: "row-reverse",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  topBarBackButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(0,0,0,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  topBarTitle: {
-    flex: 1,
-    textAlign: "right",
-    marginRight: 12,
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#FFFFFF",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.background,
-  },
-  errorText: {
-    color: "red",
-    fontSize: 16,
-    textAlign: "center",
-    paddingHorizontal: 20,
-  },
-  profileCard: {
-    marginTop: 90,
-    marginHorizontal: 20,
-    backgroundColor: COLORS.cardBg,
+  headerCard: {
+    backgroundColor: "#FFFFFF",
     borderRadius: 24,
-    paddingVertical: 20,
-    paddingHorizontal: 18,
+    padding: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.08,
     shadowRadius: 10,
-    elevation: 5,
+    elevation: 4,
+    position: "relative",
   },
-  avatarWrapper: {
+  headerTopRow: {
+    flexDirection: "row-reverse", // RTL layout
     alignItems: "center",
-    marginTop: -60,
-    marginBottom: 8,
   },
-  profileImage: {
-    width: 112,
-    height: 112,
-    borderRadius: 56,
-    borderWidth: 4,
-    borderColor: COLORS.cardBg,
-    backgroundColor: "#E5E7EB",
+  profilePicture: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    marginLeft: 16,
   },
-  profileName: {
-    fontSize: 24,
+  headerTextArea: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 20,
     fontWeight: "700",
-    color: COLORS.textMain,
-    textAlign: "center",
+    textAlign: "right",
+  },
+  userJob: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 4,
+    textAlign: "right",
+  },
+  tagRow: {
+    flexDirection: "row-reverse",
     marginTop: 8,
   },
-  profileJob: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-    textAlign: "center",
-    marginTop: 4,
-  },
-  chipsRow: {
-    flexDirection: "row-reverse",
-    justifyContent: "center",
-    alignItems: "center",
-    flexWrap: "wrap",
-    marginTop: 10,
-    gap: 8,
-  },
-  chip: {
+  tag: {
     flexDirection: "row-reverse",
     alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginLeft: 6,
+  },
+  tagText: {
+    fontSize: 12,
+    marginRight: 4,
+  },
+
+  lifestyleRow: {
+    flexDirection: "row-reverse",
+    marginTop: 12,
+  },
+  lifestyleTag: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginLeft: 8,
+    backgroundColor: "#EFF1F5",
+  },
+  lifestyleTagActive: {
+    backgroundColor: "#E0ECFF",
+  },
+  lifestyleText: {
+    fontSize: 12,
+    marginRight: 4,
+  },
+
+  contactRow: {
+    flexDirection: "column",
+    marginTop: 12,
+    gap: 6,
+  },
+  contactItem: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+  },
+  contactText: {
+    fontSize: 13,
+    color: "#4B5563",
+    marginRight: 6,
+    maxWidth: "90%",
+    textAlign: "right",
+  },
+  iconSoft: {
+    opacity: 0.7,
+  },
+
+  profileTypeBadgeWrapper: {
+    position: "absolute",
+    top: 10,
+    left: 12,
+  },
+  profileTypeBadge: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    backgroundColor: "#111827",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: COLORS.chipBg,
-    gap: 6,
   },
-  chipText: {
-    fontSize: 12,
-    color: COLORS.chipText,
-    fontWeight: "500",
+  profileTypeText: {
+    color: "white",
+    fontSize: 11,
+    marginRight: 4,
   },
-  actionsRow: {
+
+  // Section card
+  sectionCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 14,
+    marginBottom: 14,
+  },
+  sectionHeaderRow: {
     flexDirection: "row-reverse",
-    justifyContent: "center",
     alignItems: "center",
-    marginTop: 16,
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  sectionTitleRow: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+  },
+  sectionTitleIcon: {
+    marginLeft: 6,
+    opacity: 0.8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  sectionRightLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+
+  // Stats
+  statsRow: {
+    flexDirection: "row-reverse",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  statItem: {
+    alignItems: "center",
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  statLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+
+  // Friends
+  friendsList: {
+    paddingTop: 8,
+  },
+  friendContainer: {
+    width: 72,
+    alignItems: "center",
+    marginLeft: 10,
+  },
+  friendAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginBottom: 6,
+  },
+  friendName: {
+    fontSize: 11,
+    textAlign: "center",
+  },
+
+  emptyText: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    marginTop: 6,
+    textAlign: "right",
+  },
+
+  // Apartments
+  apartmentsList: {
     gap: 10,
+    marginTop: 6,
+  },
+  apartmentCard: {
+    flexDirection: "row-reverse",
+    backgroundColor: "#F9FAFB",
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  apartmentImageWrapper: {
+    width: 110,
+    height: "100%",
+  },
+  apartmentImage: {
+    width: "100%",
+    height: "100%",
+  },
+  boostBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    backgroundColor: "#FBBF24",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  boostBadgeText: {
+    fontSize: 11,
+    marginRight: 4,
+  },
+  apartmentInfo: {
+    flex: 1,
+    padding: 10,
+    justifyContent: "space-between",
+  },
+  apartmentTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "right",
+  },
+  apartmentRow: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  apartmentLocation: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginRight: 4,
+  },
+  apartmentFooterRow: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    marginTop: 8,
+    justifyContent: "space-between",
+  },
+  apartmentPrice: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  apartmentActions: {
+    flexDirection: "row-reverse",
+  },
+  apartmentActionButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#E5E7EB",
+    marginLeft: 6,
+  },
+
+  // Bottom action bar
+  actionBar: {
+    position: "absolute",
+    bottom: 10,
+    left: 16,
+    right: 16,
+    flexDirection: "row-reverse",
+    backgroundColor: "#111827",
+    borderRadius: 999,
+    padding: 8,
+    alignItems: "center",
+    justifyContent: "space-between",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 8,
   },
   actionButton: {
     flexDirection: "row-reverse",
     alignItems: "center",
-    justifyContent: "center",
+    borderRadius: 999,
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: 999,
-    gap: 8,
   },
-  friendButton: {
-    backgroundColor: COLORS.primary,
+  actionPrimary: {
+    backgroundColor: "#F97316",
   },
-  chatButton: {
-    backgroundColor: COLORS.accent,
-  },
-  actionButtonText: {
+  actionPrimaryText: {
     color: "#FFFFFF",
     fontSize: 13,
     fontWeight: "600",
+    marginRight: 6,
   },
-
-  infoSection: {
-    marginTop: 24,
-    marginHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    textAlign: "right",
-    color: COLORS.textMain,
-    marginBottom: 10,
-  },
-  infoGrid: {
-    borderRadius: 18,
-    backgroundColor: "#F9FAFB",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    gap: 10,
-  },
-  infoItem: {
-    flexDirection: "row-reverse",
-    alignItems: "center",
-    paddingVertical: 6,
-  },
-  infoIconWrapper: {
-    marginLeft: 10,
-  },
-  infoTextWrapper: {
-    flex: 1,
-  },
-  infoLabel: {
-    fontSize: 11,
-    color: COLORS.textMuted,
-    textAlign: "right",
-  },
-  infoText: {
-    fontSize: 15,
-    color: COLORS.textMain,
-    textAlign: "right",
-    marginTop: 2,
-  },
-
-  friendsSection: {
-    marginTop: 24,
-    marginHorizontal: 20,
-  },
-  friendsHeaderRow: {
-    flexDirection: "row-reverse",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  friendsCount: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-  },
-  emptyFriendsCard: {
-    marginTop: 8,
-    padding: 14,
-    borderRadius: 16,
-    backgroundColor: "#EFF6FF",
-  },
-  emptyFriendsTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.textMain,
-    textAlign: "right",
-    marginBottom: 4,
-  },
-  emptyFriendsText: {
+  actionText: {
+    color: "#E5E7EB",
     fontSize: 13,
-    color: COLORS.textMuted,
-    textAlign: "right",
-  },
-  friendsScrollContent: {
-    flexDirection: "row-reverse",
-    alignItems: "center",
-    paddingVertical: 10,
-  },
-  friendCard: {
-    alignItems: "center",
-    marginLeft: 12,
-    backgroundColor: COLORS.cardBg,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderRadius: 18,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
-    width: 90,
-  },
-  friendCardImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "#E5E7EB",
-  },
-  friendCardName: {
-    marginTop: 6,
-    fontSize: 13,
-    fontWeight: "500",
-    color: COLORS.textMain,
-    textAlign: "center",
-  },
-
-  apartmentsWrapper: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingTop: 32,
-  },
-  logoutContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 24,
-    marginBottom: 40,
+    marginRight: 6,
   },
 });
-
-export default UserProfile;
