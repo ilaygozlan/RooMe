@@ -823,7 +823,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#64748B",
     textAlign: "right",
-    marginBottom: 8,
   },
   mapLink: {
     alignSelf: "flex-start",

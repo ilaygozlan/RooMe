@@ -283,7 +283,7 @@ const allApartments: Apartment[] = [
     Creator_ProfilePicture: "https://i.pravatar.cc/150?img=38",
     Images: ["https://thumbs.dreamstime.com/b/modern-house-interior-exterior-design-46517595.jpg","https://picsum.photos/800/400?random=16","https://picsum.photos/800/400?random=1","https://picsum.photos/800/400?random=2","https://picsum.photos/800/400?random=31","https://picsum.photos/800/400?random=32"],
     ApartmentType: 0,
-    Location: "{\"address\": \"King George 80, Tel Aviv\", \"latitude\": 32.073, \"longitude\": 34.777}",
+    Location: "{\"address\": \"קינג ג'ורג' 80, Tel Aviv\", \"latitude\": 32.073, \"longitude\": 34.777}",
     Price: 8400,
     Description: "Penthouse, skyline views, huge terrace, elevator & parking.",
     AmountOfRooms: 4, AllowPet: false, AllowSmoking: false, ParkingSpace: 1,
