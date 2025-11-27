@@ -1,10 +1,11 @@
 // components/apartment/apartmentCard.tsx
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
   Dimensions,
   Image,
+  Modal,
   Platform,
   Share,
   StyleSheet,
@@ -20,6 +21,11 @@ import SaveButton from "@/components/apartment/saveApartmentBtn";
 
 import { type Apartment } from "@/context/ApartmentsContext";
 import { ENV } from "@/src/config/env";
+import UserProfileScreen, {
+  exampleApartments,
+  exampleFriends,
+  exampleUser,
+} from "@/components/userProfile";
 
 // ===== Types =====
 type ApartmentCardProps = {
@@ -127,18 +133,13 @@ export default function ApartmentCard({
   onShare,
 }: ApartmentCardProps) {
   const router = useRouter();
+  const [profileVisible, setProfileVisible] = useState(false);
 
   const handleCreatorPress = () => {
-    const openUser = (globalThis as any)?.__openUserProfile__;
-    if (typeof openUser === "function") {
-      openUser(1); //creator id
-    } else {
-      router.push({
-        pathname: "UserProfile" as any,
-        params: { userId: apt.Creator_ID },
-      });
-    }
+    setProfileVisible(true);
   };
+
+  const closeProfile = () => setProfileVisible(false);
 
   const handleShareApartment = async (apt: Apartment): Promise<void> => {
     if (onShare) {
@@ -234,6 +235,20 @@ export default function ApartmentCard({
           />
         </View>
       )}
+
+      <Modal
+        visible={profileVisible}
+        animationType="slide"
+        onRequestClose={closeProfile}
+      >
+        <UserProfileScreen
+          user={exampleUser}
+          friends={exampleFriends}
+          apartments={exampleApartments}
+          isCurrentUser={false}
+          onClose={closeProfile}
+        />
+      </Modal>
     </View>
   );
 }

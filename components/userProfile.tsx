@@ -10,11 +10,15 @@ import {
   FlatList,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // make sure expo installed @expo/vector-icons
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import ApartmentCard from "@/components/apartment/apartmentCard";
+import { router } from "expo-router";
 
 // ===== Example data =====
-const exampleUser = {
+export const exampleUser = {
   id: 1,
   fullName: "עילאי גוזלן",
   email: "ilay@example.com",
@@ -27,50 +31,81 @@ const exampleUser = {
   profilePicture: "https://www.w3schools.com/howto/img_avatar.png",
 };
 
-const exampleFriends = [
+export const exampleFriends = [
   { id: 2, name: "נועה לוי", avatar: "https://i.pravatar.cc/100?img=5" },
   { id: 3, name: "דניאל כהן", avatar: "https://i.pravatar.cc/100?img=10" },
   { id: 4, name: "יואב רז", avatar: "https://i.pravatar.cc/100?img=15" },
 ];
 
-const exampleApartments = [  {
+export const exampleApartments = [
+  {
     ApartmentID: 108,
     Creator_ID: 8,
     Creator_FullName: "ilay gozlan",
     Creator_ProfilePicture: "https://i.pravatar.cc/150?img=41",
-    Images: ["https://thumbs.dreamstime.com/b/modern-house-interior-exterior-design-46517595.jpg","https://picsum.photos/800/400?random=16","https://picsum.photos/800/400?random=1","https://picsum.photos/800/400?random=2","https://picsum.photos/800/400?random=31","https://picsum.photos/800/400?random=32"],
+    Images: [
+      "https://thumbs.dreamstime.com/b/modern-house-interior-exterior-design-46517595.jpg",
+      "https://picsum.photos/800/400?random=16",
+      "https://picsum.photos/800/400?random=1",
+      "https://picsum.photos/800/400?random=2",
+      "https://picsum.photos/800/400?random=31",
+      "https://picsum.photos/800/400?random=32",
+    ],
     ApartmentType: 0,
-    Location: "{\"address\": \"קינג ג'ורג' 80, Tel Aviv\", \"latitude\": 32.073, \"longitude\": 34.777}",
+    Location:
+      '{"address": "קינג ג\'ורג\' 80, Tel Aviv", "latitude": 32.073, "longitude": 34.777}',
     Price: 8400,
     Description: "Penthouse, skyline views, huge terrace, elevator & parking.",
-    AmountOfRooms: 4, AllowPet: false, AllowSmoking: false, ParkingSpace: 1,
-    EntryDate: "2025-12-05T00:00:00", ExitDate: null,
-    Rental_ContractLength: 24, Rental_ExtensionPossible: true,
-    Shared_NumberOfRoommates: null, Roommates: "",
-    Sublet_CanCancelWithoutPenalty: false, Sublet_IsWholeProperty: false,
-    LabelsJson: '[{"value":"terrace"},{"value":"elevator"},{"value":"parking"},{"value":"dishwasher"}]',
-    NumOfLikes: 20, IsLikedByUser: true,
+    AmountOfRooms: 4,
+    AllowPet: false,
+    AllowSmoking: false,
+    ParkingSpace: 1,
+    EntryDate: "2025-12-05T00:00:00",
+    ExitDate: null,
+    Rental_ContractLength: 24,
+    Rental_ExtensionPossible: true,
+    Shared_NumberOfRoommates: null,
+    Roommates: "",
+    Sublet_CanCancelWithoutPenalty: false,
+    Sublet_IsWholeProperty: false,
+    LabelsJson:
+      '[{"value":"terrace"},{"value":"elevator"},{"value":"parking"},{"value":"dishwasher"}]',
+    NumOfLikes: 20,
+    IsLikedByUser: true,
   },
   {
     ApartmentID: 109,
     Creator_ID: 9,
     Creator_FullName: "ilay gozlan",
     Creator_ProfilePicture: "https://i.pravatar.cc/150?img=41",
-    Images: ["https://picsum.photos/800/400?random=17","https://picsum.photos/800/400?random=18"],
+    Images: [
+      "https://picsum.photos/800/400?random=17",
+      "https://picsum.photos/800/400?random=18",
+    ],
     ApartmentType: 1,
-    Location: "{\"address\": \"Bar Ilan 5, Ramat Gan\", \"latitude\": 32.082, \"longitude\": 34.826}",
+    Location:
+      '{"address": "Bar Ilan 5, Ramat Gan", "latitude": 32.082, "longitude": 34.826}',
     Price: 4100,
-    Description: "Student-friendly shared flat, bills included, near campus and transit.",
-    AmountOfRooms: 3, AllowPet: false, AllowSmoking: true, ParkingSpace: 0,
-    EntryDate: "2025-11-22T00:00:00", ExitDate: null,
-    Rental_ContractLength: 12, Rental_ExtensionPossible: true,
+    Description:
+      "Student-friendly shared flat, bills included, near campus and transit.",
+    AmountOfRooms: 3,
+    AllowPet: false,
+    AllowSmoking: true,
+    ParkingSpace: 0,
+    EntryDate: "2025-11-22T00:00:00",
+    ExitDate: null,
+    Rental_ContractLength: 12,
+    Rental_ExtensionPossible: true,
     Shared_NumberOfRoommates: 2,
-    Roommates: "Name:Tom|Gender:Male|Job:Student|BirthDate:2001-02-02|Image:https://i.pravatar.cc/100?img=52||Name:Noya|Gender:Female|Job:Student|BirthDate:2002-07-09|Image:https://i.pravatar.cc/100?img=53",
+    Roommates:
+      "Name:Tom|Gender:Male|Job:Student|BirthDate:2001-02-02|Image:https://i.pravatar.cc/100?img=52||Name:Noya|Gender:Female|Job:Student|BirthDate:2002-07-09|Image:https://i.pravatar.cc/100?img=53",
     LabelsJson: '[{"value":"wifi"},{"value":"balcony"},{"value":"ac"}]',
-    Sublet_CanCancelWithoutPenalty: false, Sublet_IsWholeProperty: false,
-    NumOfLikes: 9, IsLikedByUser: false,
+    Sublet_CanCancelWithoutPenalty: false,
+    Sublet_IsWholeProperty: false,
+    NumOfLikes: 9,
+    IsLikedByUser: false,
   },
-  ];
+];
 
 // ===== Helper: calculate age =====
 const getAgeFromBirthDate = (birthDateString) => {
@@ -120,7 +155,6 @@ const FriendAvatar = ({ friend }) => {
     </View>
   );
 };
-
 
 // ===== Profile Header (shared for my profile / other profile) =====
 const ProfileHeader = ({ user, isCurrentUser }) => {
@@ -221,10 +255,14 @@ const ProfileHeader = ({ user, isCurrentUser }) => {
 };
 
 // ===== Floating action bar (different for my / other profile) =====
-const ProfileActionBar = ({ isCurrentUser }) => {
+const ProfileActionBar = ({ isCurrentUser, safeBottomPadding = 0 }) => {
+  const actionBarStyle = [
+    styles.actionBar,
+    { bottom: Math.max(10, safeBottomPadding + 10) },
+  ];
   if (isCurrentUser) {
     return (
-      <View style={styles.actionBar}>
+      <View style={actionBarStyle}>
         <TouchableOpacity style={[styles.actionButton, styles.actionPrimary]}>
           <Ionicons name="pencil-outline" size={18} />
           <Text style={styles.actionPrimaryText}>עריכת פרופיל</Text>
@@ -239,7 +277,7 @@ const ProfileActionBar = ({ isCurrentUser }) => {
 
   // Actions when viewing someone else’s profile
   return (
-    <View style={styles.actionBar}>
+    <View style={actionBarStyle}>
       <TouchableOpacity style={[styles.actionButton, styles.actionPrimary]}>
         <Ionicons name="chatbubble-ellipses-outline" size={18} />
         <Text style={styles.actionPrimaryText}>שליחת הודעה</Text>
@@ -258,15 +296,48 @@ const UserProfileScreen = ({
   friends = exampleFriends,
   apartments = exampleApartments,
   isCurrentUser = false,
+  onClose,
 }) => {
+  const insets = useSafeAreaInsets();
+  const handleBackPress = () => {
+    if (typeof onClose === "function") {
+      onClose();
+      return;
+    }
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  };
+
   return (
-    <SafeAreaView>
+    <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
       <View style={styles.root}>
+        <View
+          style={[
+            styles.backButtonWrapper,
+            { top: insets.top + 10 },
+          ]}
+        >
+          <TouchableOpacity
+            onPress={handleBackPress}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={22} color="#111827" />
+          </TouchableOpacity>
+        </View>
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: insets.top + 30 },
+          ]}
           showsVerticalScrollIndicator={false}
         >
-          <ProfileHeader user={user} isCurrentUser={isCurrentUser} />
+          <ProfileHeader
+            user={user}
+            isCurrentUser={isCurrentUser}
+          />
 
           {/* Stats section */}
           <SectionCard
@@ -327,9 +398,12 @@ const UserProfileScreen = ({
           >
             {apartments.length ? (
               <View style={styles.apartmentsList}>
-                {apartments.map((apt) => (
-                  <ApartmentCard key={apt.id} apartment={apt} />
-                ))}
+                {apartments.map((apt, idx) => {
+                  const key =
+                    apt?.ApartmentID ??
+                    (typeof apt?.id !== "undefined" ? apt.id : `apt-${idx}`);
+                  return <ApartmentCard key={String(key)} apartment={apt} />;
+                })}
               </View>
             ) : (
               <Text style={styles.emptyText}>
@@ -343,7 +417,10 @@ const UserProfileScreen = ({
         </ScrollView>
 
         {/* Floating bottom action bar */}
-        <ProfileActionBar isCurrentUser={isCurrentUser} />
+        <ProfileActionBar
+          isCurrentUser={isCurrentUser}
+          safeBottomPadding={insets.bottom}
+        />
       </View>
     </SafeAreaView>
   );
@@ -353,7 +430,12 @@ export default UserProfileScreen;
 
 // ===== Styles =====
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#F5F7FB", // color behind the whole screen including safe area
+  },
   root: {
+    flex: 1,
     backgroundColor: "#F5F7FB",
   },
   scrollContent: {
@@ -376,6 +458,21 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 4,
     position: "relative",
+  },
+  backButtonWrapper: {
+    position: "absolute",
+    left: 16,
+    zIndex: 50,
+  },
+  backButton: {
+    backgroundColor: "rgba(255,255,255,0.9)",
+    padding: 6,
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   headerTopRow: {
     flexDirection: "row-reverse", // RTL layout
@@ -636,7 +733,6 @@ const styles = StyleSheet.create({
   // Bottom action bar
   actionBar: {
     position: "absolute",
-    bottom: 10,
     left: 16,
     right: 16,
     flexDirection: "row-reverse",
