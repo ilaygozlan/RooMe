@@ -330,7 +330,7 @@ const UserProfileScreen = ({
         <ScrollView
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingTop: insets.top + 30 },
+            { paddingTop: insets.top + 60 },
           ]}
           showsVerticalScrollIndicator={false}
         >
